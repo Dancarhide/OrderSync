@@ -43,9 +43,5 @@ export class LoginComponent {
       }
     });
   }
-
-  contactSupport() {
-    window.location.href =
-      'mailto:support@ordersync.app?subject=Account%20issues';
-  }
 }
+
