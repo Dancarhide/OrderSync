@@ -1,0 +1,50 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #09090b;
+  font-family: 'Sora', system-ui, -apple-system, sans-serif;
+}
+
+.brand-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(115deg, #000000 20%, #dc2626 60%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.font-heading {
+  font-family: 'Syne', sans-serif;
+}
+
+.enterprise-btn-primary {
+  background: linear-gradient(105deg, #dc2626 0%, #7c3aed 100%);
+  background-size: 160% 100%;
+  background-position: 0% 50%;
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.22);
+  transition: background-position 0.35s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.enterprise-btn-primary:hover {
+  background-position: 100% 50%;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(124, 58, 237, 0.28);
+}
+
+.enterprise-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 10px 30px -4px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.enterprise-card:hover {
+  border-color: rgba(124, 58, 237, 0.2);
+}

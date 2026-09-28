@@ -1,0 +1,34 @@
+{
+  "version.current": {
+    "message": "Actual",
+    "description": "The label for version current"
+  },
+  "sidebar.docsSidebar.doc.architecture": {
+    "message": "Arquitectura del Sistema",
+    "description": "The label for the architecture doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.security": {
+    "message": "Seguridad y Cumplimiento",
+    "description": "The label for the security doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.management-modules": {
+    "message": "Suite de Gestión Empresarial (ERP/OMS)",
+    "description": "The label for the enterprise management doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.logistics-engine": {
+    "message": "Motor Autónomo de Rutas y Despacho",
+    "description": "The label for the autonomous logistics doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.business-intelligence": {
+    "message": "Métricas Ejecutivas y Analítica BI",
+    "description": "The label for the BI metrics doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.api": {
+    "message": "API y Webhooks",
+    "description": "The label for the API reference doc in sidebar"
+  },
+  "sidebar.docsSidebar.doc.devops": {
+    "message": "DevOps y Despliegue",
+    "description": "The label for the devops doc in sidebar"
+  }
+}
