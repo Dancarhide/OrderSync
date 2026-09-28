@@ -213,7 +213,7 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
       await client.query(
         `INSERT INTO order_items (order_id, sku, product_name, quantity, unit_price)
          VALUES ($1, $2, $3, $4, $5)`,
-        [orderId, item.sku, item.product_name, item.quantity, item.unit_price]
+        [orderId, item.sku, EncryptionService.encryptString(item.product_name), item.quantity, item.unit_price]
       );
 
       // Deduct stock from inventory table atomically to avoid overselling
@@ -232,11 +232,14 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
     const sync_latency_ms = t2 - t1;
     await client.query('UPDATE orders SET sync_latency_ms = $1 WHERE id = $2', [sync_latency_ms, orderId]);
 
-    // 7b. Automatically register delivery route for the new order
+    // 7b. Automatically register delivery route for the new order (Encrypted Destination & Tracking)
     const carrier = channel === 'Shopify' ? 'DHL Express' : 'Amazon Logistics';
     const trackingNum = channel === 'Shopify' 
       ? `DHL-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-EXP`
       : `TBA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-AMZ`;
+
+    const encTracking = EncryptionService.encryptString(trackingNum);
+    const encDestination = EncryptionService.encryptString(customer.shipping_address || 'Houston, TX');
 
     await client.query(
       `INSERT INTO shipments (order_id, external_order_id, channel, carrier, tracking_number, destination, current_step, is_delivered, estimated_delivery, checkpoints)
@@ -246,8 +249,8 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
         external_order_id,
         channel,
         carrier,
-        trackingNum,
-        customer.shipping_address || 'Houston, TX',
+        encTracking,
+        encDestination,
         JSON.stringify([
           { step: 'processing', title: 'Orden Recibida y en Empaque', timestamp: 'Ahora mismo', done: true },
           { step: 'in_transit', title: 'Despachado en Ruta', timestamp: 'Pendiente', done: false },
@@ -356,6 +359,8 @@ export async function processShopifyRefundPayload(io: Server, payload: any, res:
 
     const returnNumber = `RET-SHPF-${Math.floor(10000 + Math.random() * 90000)}`;
     const extOrderId = matchedOrder?.external_order_id || `#${rawOrderId || Math.floor(1000 + Math.random() * 9000)}`;
+    const trackingNum = `DHL-RET-${Math.floor(1000 + Math.random() * 9000)}`;
+    const defaultNotes = 'Reembolso en tiempo real procesado por Webhook oficial de Shopify.';
 
     const insRes = await pool.query(
       `INSERT INTO returns (
@@ -368,17 +373,23 @@ export async function processShopifyRefundPayload(io: Server, payload: any, res:
         returnNumber,
         matchedOrder?.id || null,
         extOrderId,
-        customerName,
+        EncryptionService.encryptString(customerName),
         sku,
-        productName,
+        EncryptionService.encryptString(productName),
         quantity,
         refundAmount,
-        `DHL-RET-${Math.floor(1000 + Math.random() * 9000)}`,
-        'Reembolso en tiempo real procesado por Webhook oficial de Shopify.'
+        EncryptionService.encryptString(trackingNum),
+        EncryptionService.encryptString(defaultNotes)
       ]
     );
 
-    const createdReturn = insRes.rows[0];
+    const createdReturn = {
+      ...insRes.rows[0],
+      customer_name: customerName,
+      product_name: productName,
+      tracking_number: trackingNum,
+      notes: defaultNotes
+    };
 
     // Restock inventory atomically
     await pool.query(

@@ -136,22 +136,16 @@ app.get('/api/orders', async (_req, res) => {
       let customerPhone = 'No registrado';
 
       if (row.encrypted_full_name) {
-        try {
-          const dec = EncryptionService.decrypt(row.encrypted_full_name);
-          if (dec && !dec.includes('[Decryption Error]')) customerName = dec;
-        } catch {}
+        const dec = EncryptionService.decryptString(row.encrypted_full_name);
+        if (dec && !dec.includes('[Decryption Error]')) customerName = dec;
       }
       if (row.encrypted_shipping_address) {
-        try {
-          const dec = EncryptionService.decrypt(row.encrypted_shipping_address);
-          if (dec && !dec.includes('[Decryption Error]')) customerAddress = dec;
-        } catch {}
+        const dec = EncryptionService.decryptString(row.encrypted_shipping_address);
+        if (dec && !dec.includes('[Decryption Error]')) customerAddress = dec;
       }
       if (row.encrypted_phone) {
-        try {
-          const dec = EncryptionService.decrypt(row.encrypted_phone);
-          if (dec && !dec.includes('[Decryption Error]')) customerPhone = dec;
-        } catch {}
+        const dec = EncryptionService.decryptString(row.encrypted_phone);
+        if (dec && !dec.includes('[Decryption Error]')) customerPhone = dec;
       }
 
       return {
@@ -226,18 +220,24 @@ const initDbTables = async () => {
 };
 initDbTables();
 
-// Suppliers Endpoints (Gestión de Proveedores)
+// Suppliers Endpoints (Gestión de Proveedores con Cifrado en Reposo)
 app.get('/api/suppliers', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM suppliers ORDER BY rating DESC, name ASC');
-    res.json(result.rows);
+    const decrypted = result.rows.map(row => ({
+      ...row,
+      contact_name: EncryptionService.decryptString(row.contact_name),
+      email: EncryptionService.decryptString(row.email),
+      phone: EncryptionService.decryptString(row.phone)
+    }));
+    res.json(decrypted);
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     res.status(500).json({ error: 'Failed to retrieve suppliers' });
   }
 });
 
-// Create New Supplier
+// Create New Supplier (Cifrado AES-256)
 app.post('/api/suppliers', async (req, res) => {
   const { name, contact_name, email, phone, country, category, lead_time_days, rating } = req.body;
   if (!name) {
@@ -245,33 +245,51 @@ app.post('/api/suppliers', async (req, res) => {
     return;
   }
   try {
+    const plainContact = contact_name?.trim() || 'Gerente de Cuentas';
+    const plainEmail = email?.trim() || 'contacto@proveedor.com';
+    const plainPhone = phone?.trim() || '+1 (800) 555-0100';
+
+    const encContact = EncryptionService.encryptString(plainContact);
+    const encEmail = EncryptionService.encryptString(plainEmail);
+    const encPhone = EncryptionService.encryptString(plainPhone);
+
     const result = await pool.query(
       `INSERT INTO suppliers (name, contact_name, email, phone, country, category, lead_time_days, rating)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         name.trim(),
-        contact_name?.trim() || 'Gerente de Cuentas',
-        email?.trim() || 'contacto@proveedor.com',
-        phone?.trim() || '+1 (800) 555-0100',
+        encContact,
+        encEmail,
+        encPhone,
         country?.trim() || 'USA',
         category?.trim() || 'Hardware y Periféricos',
         Number(lead_time_days) || 3,
         Number(rating) || 4.8
       ]
     );
-    res.status(201).json(result.rows[0]);
+    const row = result.rows[0];
+    res.status(201).json({
+      ...row,
+      contact_name: plainContact,
+      email: plainEmail,
+      phone: plainPhone
+    });
   } catch (error) {
     console.error('Error creating supplier:', error);
     res.status(500).json({ error: 'Failed to create supplier' });
   }
 });
 
-// Update Existing Supplier
+// Update Existing Supplier (Cifrado AES-256)
 app.put('/api/suppliers/:id', async (req, res) => {
   const { id } = req.params;
   const { name, contact_name, email, phone, country, category, lead_time_days, rating } = req.body;
   try {
+    const encContact = contact_name !== undefined ? EncryptionService.encryptString(contact_name) : null;
+    const encEmail = email !== undefined ? EncryptionService.encryptString(email) : null;
+    const encPhone = phone !== undefined ? EncryptionService.encryptString(phone) : null;
+
     const result = await pool.query(
       `UPDATE suppliers 
        SET name = COALESCE($1, name),
@@ -284,13 +302,19 @@ app.put('/api/suppliers/:id', async (req, res) => {
            rating = COALESCE($8, rating)
        WHERE id = $9
        RETURNING *`,
-      [name, contact_name, email, phone, country, category, lead_time_days ? Number(lead_time_days) : null, rating ? Number(rating) : null, id]
+      [name, encContact, encEmail, encPhone, country, category, lead_time_days ? Number(lead_time_days) : null, rating ? Number(rating) : null, id]
     );
     if (result.rows.length === 0) {
       res.status(404).json({ error: 'Supplier not found' });
       return;
     }
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    res.json({
+      ...row,
+      contact_name: EncryptionService.decryptString(row.contact_name),
+      email: EncryptionService.decryptString(row.email),
+      phone: EncryptionService.decryptString(row.phone)
+    });
   } catch (error) {
     console.error('Error updating supplier:', error);
     res.status(500).json({ error: 'Failed to update supplier' });
@@ -313,7 +337,7 @@ app.delete('/api/suppliers/:id', async (req, res) => {
   }
 });
 
-// Purchase Orders History Endpoint (Historial de Surtidos)
+// Purchase Orders History Endpoint (Historial de Surtidos con Cifrado)
 app.get('/api/purchase-orders', async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -321,14 +345,19 @@ app.get('/api/purchase-orders', async (_req, res) => {
       ORDER BY created_at DESC 
       LIMIT 100
     `);
-    res.json(result.rows);
+    const decrypted = result.rows.map(row => ({
+      ...row,
+      supplier_name: EncryptionService.decryptString(row.supplier_name),
+      product_name: EncryptionService.decryptString(row.product_name)
+    }));
+    res.json(decrypted);
   } catch (error) {
     console.error('Error fetching purchase orders:', error);
     res.status(500).json({ error: 'Failed to retrieve purchase orders' });
   }
 });
 
-// Purchase Order Endpoint (Reorden / Surtido inteligente de stock con proveedor)
+// Purchase Order Endpoint (Reorden / Surtido inteligente con cifrado en BD)
 app.post('/api/suppliers/:id/order', async (req, res) => {
   const { id } = req.params;
   const { sku, units } = req.body;
@@ -359,7 +388,7 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
       [targetSku, product.product_name, quantity, unitCost, supplier.name]
     );
 
-    // 4. Record purchase order
+    // 4. Record purchase order with encrypted supplier and product names
     const poRes = await pool.query(
       `INSERT INTO purchase_orders (po_number, supplier_id, supplier_name, sku, product_name, units, unit_cost, total_cost, status, estimated_arrival)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Entregado a Almacén', $9)
@@ -367,9 +396,9 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
       [
         poNumber,
         supplier.id,
-        supplier.name,
+        EncryptionService.encryptString(supplier.name),
         targetSku,
-        product.product_name,
+        EncryptionService.encryptString(product.product_name),
         quantity,
         unitCost,
         totalCost,
@@ -377,7 +406,11 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
       ]
     );
 
-    const createdPo = poRes.rows[0];
+    const createdPo = {
+      ...poRes.rows[0],
+      supplier_name: supplier.name,
+      product_name: product.product_name
+    };
 
     // Emit real-time notification
     io.emit('PURCHASE_ORDER_CREATED', createdPo);
@@ -395,11 +428,16 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
   }
 });
 
-// Shipments / Tracking Routes (Rutas y Confirmación de "¿Ya llegó?")
+// Shipments / Tracking Routes (Rutas y Confirmación con Cifrado en Reposo)
 app.get('/api/shipments', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM shipments ORDER BY created_at DESC');
-    res.json(result.rows);
+    const decrypted = result.rows.map(row => ({
+      ...row,
+      destination: EncryptionService.decryptString(row.destination),
+      tracking_number: EncryptionService.decryptString(row.tracking_number)
+    }));
+    res.json(decrypted);
   } catch (error) {
     console.error('Error fetching shipments:', error);
     res.status(500).json({ error: 'Failed to retrieve shipments' });
@@ -467,7 +505,11 @@ app.post('/api/shipments/:id/advance', async (req, res) => {
       [nextStep, isDelivered, estDelivery, JSON.stringify(checkpoints), id]
     );
 
-    const updatedShipment = updateRes.rows[0];
+    const updatedShipment = {
+      ...updateRes.rows[0],
+      destination: EncryptionService.decryptString(updateRes.rows[0].destination),
+      tracking_number: EncryptionService.decryptString(updateRes.rows[0].tracking_number)
+    };
     io.emit('SHIPMENT_UPDATED', updatedShipment);
 
     res.json({
@@ -652,7 +694,12 @@ setInterval(async () => {
         [nextStep, isDelivered, estDelivery, JSON.stringify(checkpoints), row.id]
       );
 
-      io.emit('SHIPMENT_UPDATED', upRes.rows[0]);
+      const broadcastShipment = {
+        ...upRes.rows[0],
+        destination: EncryptionService.decryptString(upRes.rows[0].destination),
+        tracking_number: EncryptionService.decryptString(upRes.rows[0].tracking_number)
+      };
+      io.emit('SHIPMENT_UPDATED', broadcastShipment);
     }
   } catch (err) {
     console.error('Auto dispatch error:', err);
@@ -722,11 +769,14 @@ app.post('/api/orders/simulate-batch', async (req, res) => {
         ? `DHL-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-EXP`
         : `TBA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-AMZ`;
 
+      const encTracking = EncryptionService.encryptString(tracking);
+      const encDestination = EncryptionService.encryptString(selectedSample.address || 'Dallas, TX Hub');
+
       await pool.query(
         `INSERT INTO shipments (order_id, external_order_id, channel, carrier, tracking_number, destination, current_step, is_delivered, estimated_delivery, checkpoints)
          VALUES ($1, $2, $3, $4, $5, $6, 'processing', false, 'Mañana 14:00 hrs', $7)`,
         [
-          orderId, extId, channel, carrier, tracking, 'Dallas, TX Hub',
+          orderId, extId, channel, carrier, encTracking, encDestination,
           JSON.stringify([
             { step: 'processing', title: 'Orden Recibida y en Empaque', timestamp: 'Ahora mismo', done: true },
             { step: 'in_transit', title: 'Despachado en Ruta', timestamp: 'Pendiente', done: false },
@@ -755,21 +805,28 @@ app.post('/api/orders/simulate-batch', async (req, res) => {
 // RETURNS & REFUNDS ENDPOINTS (Sistema de Devoluciones y RMA)
 // =========================================================================
 
-// 1. Get all returns
+// 1. Get all returns (Con descifrado en memoria para usuarios autenticados)
 app.get('/api/returns', async (_req, res) => {
   try {
     const result = await pool.query(`
       SELECT * FROM returns 
       ORDER BY created_at DESC
     `);
-    res.json(result.rows);
+    const decrypted = result.rows.map(row => ({
+      ...row,
+      customer_name: EncryptionService.decryptString(row.customer_name),
+      product_name: EncryptionService.decryptString(row.product_name),
+      notes: EncryptionService.decryptString(row.notes),
+      tracking_number: EncryptionService.decryptString(row.tracking_number)
+    }));
+    res.json(decrypted);
   } catch (error) {
     console.error('Error fetching returns:', error);
     res.status(500).json({ error: 'Failed to retrieve returns' });
   }
 });
 
-// 2. Register new return manually
+// 2. Register new return manually (Cifrado AES-256 en Base de Datos)
 app.post('/api/returns', async (req, res) => {
   const {
     external_order_id,
@@ -794,8 +851,15 @@ app.post('/api/returns', async (req, res) => {
   const returnNumber = `RET-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
   const finalChannel = channel || (external_order_id.startsWith('#SHPF') ? 'Shopify' : 'Amazon');
   const finalTracking = tracking_number || (finalChannel === 'Shopify' ? `DHL-RET-${Math.floor(1000 + Math.random() * 9000)}` : `TBA-RET-${Math.floor(1000 + Math.random() * 9000)}`);
+  const finalNotes = notes?.trim() || 'Devolución registrada formalmente en OrderSync RMA';
+  const finalProductName = product_name?.trim() || 'Producto General';
 
   try {
+    const encCustomer = EncryptionService.encryptString(customer_name.trim());
+    const encProduct = EncryptionService.encryptString(finalProductName);
+    const encNotes = EncryptionService.encryptString(finalNotes);
+    const encTracking = EncryptionService.encryptString(finalTracking);
+
     const result = await pool.query(
       `INSERT INTO returns (
         return_number, external_order_id, channel, customer_name, sku, 
@@ -807,20 +871,27 @@ app.post('/api/returns', async (req, res) => {
         returnNumber,
         external_order_id.trim(),
         finalChannel,
-        customer_name.trim(),
+        encCustomer,
         sku.toUpperCase().trim(),
-        product_name?.trim() || 'Producto General',
+        encProduct,
         Number(quantity) || 1,
         Number(refund_amount) || 0.00,
         currency || 'USD',
         reason || 'CUSTOMER_MIND',
         restock_inventory !== false,
-        finalTracking,
-        notes?.trim() || 'Devolución registrada formalmente en OrderSync RMA'
+        encTracking,
+        encNotes
       ]
     );
 
-    const newReturn = result.rows[0];
+    const newReturn = {
+      ...result.rows[0],
+      customer_name: customer_name.trim(),
+      product_name: finalProductName,
+      tracking_number: finalTracking,
+      notes: finalNotes
+    };
+
     io.emit('RETURN_CREATED', newReturn);
     res.status(201).json(newReturn);
   } catch (error) {
@@ -879,16 +950,23 @@ app.post('/api/returns/:id/process', async (req, res) => {
        WHERE id = $2 RETURNING *`,
       [newStatus, id]
     );
-    const updatedReturn = upRes.rows[0];
 
-    io.emit('RETURN_UPDATED', updatedReturn);
+    const decryptedReturn = {
+      ...upRes.rows[0],
+      customer_name: EncryptionService.decryptString(upRes.rows[0].customer_name),
+      product_name: EncryptionService.decryptString(upRes.rows[0].product_name),
+      notes: EncryptionService.decryptString(upRes.rows[0].notes),
+      tracking_number: EncryptionService.decryptString(upRes.rows[0].tracking_number)
+    };
+
+    io.emit('RETURN_UPDATED', decryptedReturn);
     if (restockDone) {
       io.emit('INVENTORY_UPDATED', { sku: returnItem.sku, restockedQty: returnItem.quantity });
     }
 
     res.json({
-      message: `Devolución ${updatedReturn.return_number} procesada exitosamente a estatus '${newStatus}'.`,
-      return: updatedReturn,
+      message: `Devolución ${decryptedReturn.return_number} procesada exitosamente a estatus '${newStatus}'.`,
+      return: decryptedReturn,
       restocked: restockDone
     });
   } catch (error) {
