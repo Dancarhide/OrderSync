@@ -70,6 +70,114 @@ export interface Translations {
   bestSellersTitle: string;
   carrierShareTitle: string;
   regionalDemandTitle: string;
+  tabShopifyVsAmazon: string;
+  tabReturnsRma: string;
+  financialDesc: string;
+  marginLabel: string;
+  cogsDesc: string;
+  grossProfitDesc: string;
+  salesTrendTitle: string;
+  salesTrendDesc: string;
+  btnChartRevenue: string;
+  btnChartOrders: string;
+  legendTotalRevenue: string;
+  marketShareTitle: string;
+  marketShareDesc: string;
+  leaderLabel: string;
+  tblChannelProfitTitle: string;
+  colOrders: string;
+  colGrossRev: string;
+  colCogs: string;
+  colGrossProfit: string;
+  colMarginPct: string;
+  logisticsDesc: string;
+  deliveredCountLabel: string;
+  inTransitCountLabel: string;
+  onTimeTargetDesc: string;
+  leadTimeDesc: string;
+  incidentDesc: string;
+  carrierShareSubtitle: string;
+  overallOnTimeCompliance: string;
+  shareLabel: string;
+  fulfillmentFunnelTitle: string;
+  activeShipmentsLabel: string;
+  deliveredAndConfirmed: string;
+  outForDeliveryRoute: string;
+  customersDesc: string;
+  uniqueCustomersTitle: string;
+  protectedDbNotice: string;
+  repeatRateDesc: string;
+  clvDesc: string;
+  inventoryDesc: string;
+  unitsInSkus: string;
+  skusLabel: string;
+  daysUnit: string;
+  doiDesc: string;
+  timesPerYear: string;
+  turnoverDesc: string;
+  ofCatalog: string;
+  lowStockDesc: string;
+  visualStockTitle: string;
+  visualStockSubtitle: string;
+  optimalStock: string;
+  reorderAlert: string;
+  lowStockBadge: string;
+  unitsAbbr: string;
+  safetyThresholdDesc: string;
+  colSku: string;
+  colProduct: string;
+  colSupplier: string;
+  colCurrentStock: string;
+  colCost: string;
+  colPrice: string;
+  telemetryDesc: string;
+  avgLatencyTitle: string;
+  withinSlaDesc: string;
+  p95Desc: string;
+  uptimeDesc: string;
+  rpmDesc: string;
+  slaGaugeTitle: string;
+  slaGaugeDesc: string;
+  inCompliance: string;
+  targetSla: string;
+  syncedOk: string;
+  noFailures: string;
+  sparklineTitle: string;
+  sparklineDesc: string;
+  realTimeBadge: string;
+  slaLimitLabel: string;
+  minLatency: string;
+  avgLatency: string;
+  channelComparisonDesc: string;
+  revenueByChannel: string;
+  orderVolumeByChannel: string;
+  ordersCountUnit: string;
+  aovByChannel: string;
+  shopifyAdvantage: string;
+  amazonAdvantage: string;
+  slaFastBadge: string;
+  slaNormalBadge: string;
+  normalStatus: string;
+  attentionStatus: string;
+  registeredReturns: string;
+  gatewayRefunds: string;
+  recoveredBadge: string;
+  unitsRecovered: string;
+  restockedInventoryDesc: string;
+  resolutionTimeTitle: string;
+  resolutionTimeDesc: string;
+  causalTitle: string;
+  causalDesc: string;
+  categoriesCount: string;
+  casesLabel: string;
+  channelIncidentTitle: string;
+  channelIncidentDesc: string;
+  dayPolicy: string;
+  fbaManaged: string;
+  recoveryTitle: string;
+  recoveryDesc: string;
+  savedValue: string;
+  unitsRestocked: string;
 
   // Suppliers Module
   supTitle: string;
@@ -391,6 +499,114 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     bestSellersTitle: 'Top Performing SKUs by Demand',
     carrierShareTitle: 'Carrier Fleet Distribution',
     regionalDemandTitle: 'Top Regional Shipping Hubs',
+    tabShopifyVsAmazon: 'Shopify vs Amazon',
+    tabReturnsRma: 'Returns & RMA',
+    financialDesc: 'Contribution margins, cost of goods sold, and omnichannel net profit.',
+    marginLabel: 'Margin',
+    cogsDesc: '42% Weighted catalog fulfillment & acquisition cost',
+    grossProfitDesc: 'Cumulative net gross profit on realized sales',
+    salesTrendTitle: 'Weekly Sales Trend & Projection',
+    salesTrendDesc: 'Cumulative gross revenue and daily omnichannel behavior',
+    btnChartRevenue: 'Revenue ($)',
+    btnChartOrders: 'Volume (Orders)',
+    legendTotalRevenue: 'Total Omnichannel Revenue',
+    marketShareTitle: 'Channel Market Share',
+    marketShareDesc: 'Revenue distribution and commercial channel dependency',
+    leaderLabel: 'Leader',
+    tblChannelProfitTitle: 'Profitability Statement by Sales Channel',
+    colOrders: 'Orders',
+    colGrossRev: 'Gross Revenue ($)',
+    colCogs: 'COGS Cost ($)',
+    colGrossProfit: 'Gross Profit ($)',
+    colMarginPct: 'Margin %',
+    logisticsDesc: 'Fulfillment lead times, carrier distribution, and delivery promise compliance.',
+    deliveredCountLabel: 'delivered',
+    inTransitCountLabel: 'in transit',
+    onTimeTargetDesc: 'Carrier SLA Target: ≥ 95.0% (Met)',
+    leadTimeDesc: 'Average duration from order receipt to dispatch assignment',
+    incidentDesc: 'Loss and damage rate within benchmark (< 1.5%)',
+    carrierShareSubtitle: 'Carrier fleet percentage breakdown and delivery velocity SLA',
+    overallOnTimeCompliance: 'Overall Compliance: 97.4% On-Time',
+    shareLabel: 'Share',
+    fulfillmentFunnelTitle: 'Global Logistics Fulfillment Pipeline',
+    activeShipmentsLabel: 'Active Shipments',
+    deliveredAndConfirmed: 'Delivered & Confirmed',
+    outForDeliveryRoute: 'Out for Delivery',
+    customersDesc: 'Purchasing behavior, repeat order rates, and regional customer distribution.',
+    uniqueCustomersTitle: 'Registered Unique Customers',
+    protectedDbNotice: 'Identities protected & encrypted at rest in PostgreSQL',
+    repeatRateDesc: 'Repeat customer re-order rate (+1 recorded order)',
+    clvDesc: 'Estimated Customer Lifetime Value across channels',
+    inventoryDesc: 'Stock valuation, turnover velocity, and stockout risk mitigation.',
+    unitsInSkus: 'units across',
+    skusLabel: 'SKUs',
+    daysUnit: 'days',
+    doiDesc: 'Stock coverage based on current sales velocity',
+    timesPerYear: 'x / year',
+    turnoverDesc: 'Annual catalog replacement and cycle frequency',
+    ofCatalog: 'of catalog',
+    lowStockDesc: 'Products with fewer than 15 available units',
+    visualStockTitle: 'Visual Stock Monitoring by Product',
+    visualStockSubtitle: 'Warehouse stock vs Critical Reorder Threshold (15 Units)',
+    optimalStock: 'Optimal Stock',
+    reorderAlert: 'Reorder Alert (< 15u)',
+    lowStockBadge: 'Low Stock',
+    unitsAbbr: 'units',
+    safetyThresholdDesc: 'Dashed line marks the operational minimum safety threshold (15 units).',
+    colSku: 'SKU',
+    colProduct: 'Product',
+    colSupplier: 'Supplier',
+    colCurrentStock: 'Current Stock',
+    colCost: 'Cost',
+    colPrice: 'Price',
+    telemetryDesc: 'Real-time webhook ingestion speed, cryptographic verification, and SLA adherence.',
+    avgLatencyTitle: 'Average Latency (SLA)',
+    withinSlaDesc: '✓ Within Target SLA (< 5,000 ms)',
+    p95Desc: '95th percentile atomic write in PostgreSQL',
+    uptimeDesc: 'Continuous availability without endpoint downtime',
+    rpmDesc: 'Concurrent burst processing capacity',
+    slaGaugeTitle: 'Service Guarantee (SLA Compliance)',
+    slaGaugeDesc: 'Webhook ingestion completed in under 5,000 ms',
+    inCompliance: 'In Compliance',
+    targetSla: 'Target SLA:',
+    syncedOk: 'Synced OK:',
+    noFailures: '100% Zero Failures',
+    sparklineTitle: 'Live Latency Curve (ms)',
+    sparklineDesc: 'Most recent synchronization events',
+    realTimeBadge: 'Real Time',
+    slaLimitLabel: 'SLA Limit 5,000 ms',
+    minLatency: 'Min Latency:',
+    avgLatency: 'Avg Latency:',
+    channelComparisonDesc: 'Technical, volume, and operational comparison between Shopify and Amazon SP-API.',
+    revenueByChannel: 'Revenue by Channel',
+    orderVolumeByChannel: 'Order Volume',
+    ordersCountUnit: 'orders',
+    aovByChannel: 'Average Order Value (AOV)',
+    shopifyAdvantage: 'Higher Unit Margin',
+    amazonAdvantage: 'Faster FBA Velocity',
+    slaFastBadge: '≤ 1,500 ms (Fast)',
+    slaNormalBadge: '≤ 2,200 ms (Within SLA)',
+    normalStatus: 'Normal (< 3.5%)',
+    attentionStatus: 'Attention Required',
+    registeredReturns: 'returns registered in OrderSync',
+    gatewayRefunds: 'Processed refunds across payment gateways',
+    recoveredBadge: 'Recovered',
+    unitsRecovered: 'units',
+    restockedInventoryDesc: 'Items atomically re-entered into inventory',
+    resolutionTimeTitle: 'RMA Resolution Time',
+    resolutionTimeDesc: 'Average from ticket opened to inspection decision',
+    causalTitle: 'Causal Distribution by Reason (RMA)',
+    causalDesc: 'Defect monitoring and product description mismatches',
+    categoriesCount: 'Categories',
+    casesLabel: 'case(s)',
+    channelIncidentTitle: 'Incidents by Sales Channel',
+    channelIncidentDesc: 'Comparative return rates between Shopify and Amazon',
+    dayPolicy: '30-Day policy active',
+    fbaManaged: 'Automated FBA management',
+    recoveryTitle: 'Financial Inventory Recovery',
+    recoveryDesc: 'Monetary valuation restored to stock after technical RMA inspection',
+    savedValue: 'Restored Inventory Value',
+    unitsRestocked: 'Units Restocked',
 
     // Suppliers Module
     supTitle: 'Suppliers & Procurement Directory',
@@ -711,6 +927,114 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     bestSellersTitle: 'SKUs Más Demandados en el Catálogo',
     carrierShareTitle: 'Distribución de Flota por Transportista',
     regionalDemandTitle: 'Concentración Regional de Pedidos',
+    tabShopifyVsAmazon: 'Shopify vs Amazon',
+    tabReturnsRma: 'Devoluciones & RMA',
+    financialDesc: 'Márgenes de contribución, costo de adquisición de mercancía y utilidad neta omnicanal.',
+    marginLabel: 'Margen',
+    cogsDesc: '42% Costo ponderado de surtido de catálogo',
+    grossProfitDesc: 'Utilidad bruta neta acumulada en ventas',
+    salesTrendTitle: 'Tendencia de Ventas y Proyección Semanal',
+    salesTrendDesc: 'Ingresos acumulados y comportamiento omnicanal diario',
+    btnChartRevenue: 'Facturación ($)',
+    btnChartOrders: 'Volumen (Pedidos)',
+    legendTotalRevenue: 'Facturación Total Omnicanal',
+    marketShareTitle: 'Cuota de Mercado por Canal',
+    marketShareDesc: 'Distribución de ingresos y dependencia comercial',
+    leaderLabel: 'Líder',
+    tblChannelProfitTitle: 'Estado de Rentabilidad por Canal de Venta',
+    colOrders: 'Pedidos',
+    colGrossRev: 'Ingresos Brutos ($)',
+    colCogs: 'Costo COGS ($)',
+    colGrossProfit: 'Utilidad Bruta ($)',
+    colMarginPct: 'Margen %',
+    logisticsDesc: 'Monitoreo de tiempos de entrega, cuota de transportistas y cumplimiento de promesas de entrega.',
+    deliveredCountLabel: 'entregado(s)',
+    inTransitCountLabel: 'en ruta',
+    onTimeTargetDesc: 'Objetivo SLA de Transportistas: ≥ 95.0% (Cumplido)',
+    leadTimeDesc: 'Tiempo promedio orden recibida → asignada a reparto',
+    incidentDesc: 'Tasa de daño o extravío dentro del benchmark (< 1.5%)',
+    carrierShareSubtitle: 'Distribución porcentual de paqueterías y SLA de velocidad',
+    overallOnTimeCompliance: 'Cumplimiento General: 97.4% a Tiempo',
+    shareLabel: 'Cuota',
+    fulfillmentFunnelTitle: 'Pipeline de Cumplimiento Logístico Global',
+    activeShipmentsLabel: 'Envíos Activos',
+    deliveredAndConfirmed: 'Entregados y Confirmados',
+    outForDeliveryRoute: 'En Ruta de Reparto',
+    customersDesc: 'Comportamiento de compra, tasa de recompra y distribución geográfica de clientes.',
+    uniqueCustomersTitle: 'Clientes Únicos Registrados',
+    protectedDbNotice: 'Identidades protegidas y cifradas en base de datos',
+    repeatRateDesc: 'Tasa de recompra recurrente (+1 orden registrada)',
+    clvDesc: 'Valor estimado del ciclo de vida del cliente',
+    inventoryDesc: 'Valoración de existencias, velocidad de rotación y mitigación de rotura de stock.',
+    unitsInSkus: 'unidades en',
+    skusLabel: 'SKUs',
+    daysUnit: 'días',
+    doiDesc: 'Cobertura de existencias con ritmo de venta actual',
+    timesPerYear: 'x / año',
+    turnoverDesc: 'Frecuencia anual de renovación de catálogo',
+    ofCatalog: 'catálogo',
+    lowStockDesc: 'Productos con menos de 15 unidades disponibles',
+    visualStockTitle: 'Monitoreo Visual de Stock por Producto',
+    visualStockSubtitle: 'Comparativa de existencias en almacén vs Punto Crítico de Reorden (15 Unidades)',
+    optimalStock: 'Stock Óptimo',
+    reorderAlert: 'Alerta de Reorden (< 15u)',
+    lowStockBadge: 'Bajo Stock',
+    unitsAbbr: 'uds',
+    safetyThresholdDesc: 'Línea roja discontinua indica el umbral mínimo de seguridad operacional (15 unidades).',
+    colSku: 'SKU',
+    colProduct: 'Producto',
+    colSupplier: 'Proveedor',
+    colCurrentStock: 'Stock Actual',
+    colCost: 'Costo',
+    colPrice: 'Precio',
+    telemetryDesc: 'Rendimiento en tiempo real de ingestión de webhooks, verificación criptográfica y SLA.',
+    avgLatencyTitle: 'Latencia Media (SLA)',
+    withinSlaDesc: '✓ Dentro del SLA objetivo (< 5,000 ms)',
+    p95Desc: 'Percentil 95 de ingesta atómica en PostgreSQL',
+    uptimeDesc: 'Disponibilidad continua sin caída de endpoints',
+    rpmDesc: 'Capacidad de procesamiento concurrente en ráfagas',
+    slaGaugeTitle: 'Garantía de Servicio (SLA Compliance)',
+    slaGaugeDesc: 'Ingestión de webhooks procesada en menos de 5,000 ms',
+    inCompliance: 'En Cumplimiento',
+    targetSla: 'Objetivo SLA:',
+    syncedOk: 'Sincronizaciones OK:',
+    noFailures: '100% Sin Fallas',
+    sparklineTitle: 'Curva de Latencia en Vivo (ms)',
+    sparklineDesc: 'Últimos eventos de sincronización registrados',
+    realTimeBadge: 'Tiempo Real',
+    slaLimitLabel: 'Límite SLA 5,000 ms',
+    minLatency: 'Latencia Mínima:',
+    avgLatency: 'Latencia Media:',
+    channelComparisonDesc: 'Comparativa técnica, de volumen y operativa entre Shopify Online Store y Amazon Marketplace (SP-API).',
+    revenueByChannel: 'Facturación por Canal',
+    orderVolumeByChannel: 'Volumen de Pedidos',
+    ordersCountUnit: 'pedidos',
+    aovByChannel: 'Ticket Promedio (AOV)',
+    shopifyAdvantage: 'Mayor margen unitario',
+    amazonAdvantage: 'Mayor rotación FBA',
+    slaFastBadge: '≤ 1,500 ms (Rápido)',
+    slaNormalBadge: '≤ 2,200 ms (En SLA)',
+    normalStatus: 'Normal (< 3.5%)',
+    attentionStatus: 'Atención Requerida',
+    registeredReturns: 'devoluciones registradas en OrderSync',
+    gatewayRefunds: 'Reembolsos procesados en pasarelas de pago',
+    recoveredBadge: 'Rescatado',
+    unitsRecovered: 'unidades',
+    restockedInventoryDesc: 'Productos reincorporados atómicamente al inventario',
+    resolutionTimeTitle: 'Tiempo de Resolución RMA',
+    resolutionTimeDesc: 'Promedio desde apertura hasta dictamen e inspección',
+    causalTitle: 'Distribución Causal por Motivo (RMA)',
+    causalDesc: 'Identificación de fallas de producto o discrepancias comerciales',
+    categoriesCount: 'Categorías',
+    casesLabel: 'caso(s)',
+    channelIncidentTitle: 'Incidencias por Canal de Venta',
+    channelIncidentDesc: 'Comportamiento comparado de devolución Shopify vs Amazon',
+    dayPolicy: 'Política de 30 días activada',
+    fbaManaged: 'Gestión automática FBA',
+    recoveryTitle: 'Recuperación Financiera de Inventario',
+    recoveryDesc: 'Valor monetario reincorporado al stock tras inspección técnica de RMA',
+    savedValue: 'Valor de Inventario Salvado',
+    unitsRestocked: 'Unidades Reingresadas',
 
     // Suppliers Module
     supTitle: 'Directorio de Proveedores y Surtido',

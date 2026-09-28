@@ -276,19 +276,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get returnReasons(): Array<{ reason: string; label: string; count: number; percentage: number; color: string }> {
     const list = this.metrics?.returns?.reasonsBreakdown;
+    const getReasonLabel = (reason: string): string => {
+      switch (reason) {
+        case 'DEFECTIVE': return this.t.retReasonDefective;
+        case 'SIZE_FIT': return this.t.retReasonSizeFit;
+        case 'NOT_AS_DESCRIBED': return this.t.retReasonNotAsDescribed;
+        case 'WRONG_ITEM': return this.t.retReasonWrongItem;
+        case 'CUSTOMER_MIND': return this.t.retReasonCustomerMind;
+        default: return reason;
+      }
+    };
+
     if (list && list.length > 0) {
       const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#64748b'];
       return list.map((item, idx) => ({
         ...item,
+        label: getReasonLabel(item.reason) || item.label,
         color: colors[idx % colors.length]
       }));
     }
     return [
-      { reason: 'DEFECTIVE', label: 'Defecto / Falla Técnica', count: 1, percentage: 20, color: '#ef4444' },
-      { reason: 'SIZE_FIT', label: 'Talla / Dimensiones Incompatibles', count: 1, percentage: 20, color: '#f59e0b' },
-      { reason: 'NOT_AS_DESCRIBED', label: 'Discrepancia con Descripción Web', count: 1, percentage: 20, color: '#3b82f6' },
-      { reason: 'WRONG_ITEM', label: 'Artículo o Variante Equivocada', count: 1, percentage: 20, color: '#8b5cf6' },
-      { reason: 'CUSTOMER_MIND', label: 'Cambio de Opinión / Desistimiento', count: 1, percentage: 20, color: '#64748b' }
+      { reason: 'DEFECTIVE', label: this.t.retReasonDefective, count: 1, percentage: 20, color: '#ef4444' },
+      { reason: 'SIZE_FIT', label: this.t.retReasonSizeFit, count: 1, percentage: 20, color: '#f59e0b' },
+      { reason: 'NOT_AS_DESCRIBED', label: this.t.retReasonNotAsDescribed, count: 1, percentage: 20, color: '#3b82f6' },
+      { reason: 'WRONG_ITEM', label: this.t.retReasonWrongItem, count: 1, percentage: 20, color: '#8b5cf6' },
+      { reason: 'CUSTOMER_MIND', label: this.t.retReasonCustomerMind, count: 1, percentage: 20, color: '#64748b' }
     ];
   }
 
@@ -335,21 +347,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const amazonRev = this.metrics?.sales?.amazonRevenue || totalRev * 0.42;
     const totalOrders = this.metrics?.sales?.totalOrders || 48;
 
-    const days = [
-      { label: 'Lun', factor: 0.12, orderFactor: 0.11 },
-      { label: 'Mar', factor: 0.14, orderFactor: 0.13 },
-      { label: 'Mié', factor: 0.13, orderFactor: 0.15 },
-      { label: 'Jue', factor: 0.16, orderFactor: 0.14 },
-      { label: 'Vie', factor: 0.19, orderFactor: 0.20 },
-      { label: 'Sáb', factor: 0.15, orderFactor: 0.16 },
-      { label: 'Dom', factor: 0.11, orderFactor: 0.11 }
+    const isEs = this.translationService.currentLang === 'es';
+    const dayLabels = isEs 
+      ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const factors = [
+      { factor: 0.12, orderFactor: 0.11 },
+      { factor: 0.14, orderFactor: 0.13 },
+      { factor: 0.13, orderFactor: 0.15 },
+      { factor: 0.16, orderFactor: 0.14 },
+      { factor: 0.19, orderFactor: 0.20 },
+      { factor: 0.15, orderFactor: 0.16 },
+      { factor: 0.11, orderFactor: 0.11 }
     ];
 
-    return days.map(d => {
+    return dayLabels.map((label, i) => {
+      const d = factors[i];
       const s = Math.round(shopifyRev * d.factor);
       const a = Math.round(amazonRev * d.factor);
       return {
-        date: d.label,
+        date: label,
         shopify: s,
         amazon: a,
         total: s + a,
