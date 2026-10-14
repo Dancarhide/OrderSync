@@ -54,6 +54,36 @@ export interface TelemetryReport {
     status: 'running' | 'healthy' | 'warning';
     healthcheck: string;
   }>;
+  cloud: {
+    frontend: {
+      provider: 'Vercel';
+      name: string;
+      url: string;
+      status: 'healthy' | 'running';
+      region: string;
+      ssl: string;
+      framework: string;
+    };
+    backend: {
+      provider: 'Render';
+      name: string;
+      url: string;
+      status: 'healthy' | 'running';
+      runtime: string;
+      websockets: string;
+      webhookEndpoint: string;
+    };
+    database: {
+      provider: 'Neon';
+      name: string;
+      host: string;
+      region: string;
+      status: string;
+      latencyMs: number;
+      pooling: string;
+      branch: string;
+    };
+  };
   ciCd: {
     lastWorkflow: string;
     branch: string;
@@ -221,27 +251,57 @@ export class DevOpsService {
       },
       containers: [
         {
-          name: 'ordersync-backend',
-          role: 'Core API & Event Gateway',
-          port: '3000',
-          status: 'healthy',
-          healthcheck: 'GET /health (HTTP 200)'
-        },
-        {
-          name: 'ordersync-frontend',
-          role: 'Angular Operations Dashboard',
-          port: '4200',
+          name: 'ordersync-frontend (Vercel)',
+          role: 'Vercel Edge Global CDN / Angular 17 SPA',
+          port: '443 (HTTPS)',
           status: 'running',
-          healthcheck: 'GET / (HTTP 200)'
+          healthcheck: 'https://order-sync-green.vercel.app'
         },
         {
-          name: 'ordersync-postgres',
-          role: 'Relational DB / Neon Cloud',
-          port: '5432',
+          name: 'ordersync-backend (Render)',
+          role: 'Render Cloud Web Service (Node.js & WebSockets)',
+          port: '443 (HTTPS) / 3000',
+          status: 'healthy',
+          healthcheck: 'https://ordersync-backend-kxbl.onrender.com/health'
+        },
+        {
+          name: 'ordersync-database (Neon)',
+          role: 'Neon Serverless PostgreSQL (AWS us-east-2)',
+          port: '5432 (TLS Pooled)',
           status: dbStatus === 'connected' ? 'healthy' : 'warning',
-          healthcheck: 'pg_isready -U postgres'
+          healthcheck: 'Neon Cloud Endpoint (Active Pool)'
         }
       ],
+      cloud: {
+        frontend: {
+          provider: 'Vercel',
+          name: 'OrderSync Frontend',
+          url: 'https://order-sync-green.vercel.app',
+          status: 'healthy',
+          region: 'Global Anycast Edge Network',
+          ssl: 'TLS 1.3 / Automatic Let\'s Encrypt SSL',
+          framework: 'Angular 17 (Application Builder)'
+        },
+        backend: {
+          provider: 'Render',
+          name: 'OrderSync Backend API',
+          url: 'https://ordersync-backend-kxbl.onrender.com',
+          status: 'healthy',
+          runtime: 'Node.js 20+ Linux Container',
+          websockets: 'Socket.IO Live Duplex (Connected)',
+          webhookEndpoint: 'https://ordersync-backend-kxbl.onrender.com/api/v1/webhooks/shopify'
+        },
+        database: {
+          provider: 'Neon',
+          name: 'OrderSync Neon PostgreSQL',
+          host: 'ep-lively-feather-b5wla00c-pooler.c-7.us-east-2.aws.neon.tech',
+          region: 'AWS us-east-2 (Ohio)',
+          status: dbStatus === 'connected' ? 'Connected (Online)' : 'Degraded',
+          latencyMs: dbLatencyMs,
+          pooling: 'PgBouncer Transaction Pooling Enabled',
+          branch: 'production'
+        }
+      },
       ciCd: {
         lastWorkflow: 'OrderSync CI/CD Pipeline (#42)',
         branch: 'main',

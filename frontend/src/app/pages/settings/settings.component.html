@@ -111,17 +111,6 @@
     </button>
 
     <button
-      (click)="activeTab = 'channels'"
-      [ngClass]="activeTab === 'channels' ? 'bg-black text-white font-bold shadow-xs' : 'text-slate-600 hover:text-black hover:bg-slate-50'"
-      class="px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2"
-    >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg>
-      {{ t.tabChannels }}
-    </button>
-
-    <button
       (click)="activeTab = 'security'; loadSecurityData()"
       [ngClass]="activeTab === 'security' ? 'bg-black text-white font-bold shadow-xs' : 'text-slate-600 hover:text-black hover:bg-slate-50'"
       class="px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2"
@@ -290,54 +279,7 @@
     </div>
   </div>
 
-  <!-- TAB 3: Channels Configuration -->
-  <div *ngIf="activeTab === 'channels'" class="space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="enterprise-card p-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-black/[0.06] pb-4">
-          <div>
-            <h3 class="text-base font-extrabold text-black font-heading">Shopify Webhook Gateway</h3>
-            <p class="text-xs text-slate-500">Official store credentials (Houston HQ)</p>
-          </div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Connected</span>
-        </div>
-
-        <div class="space-y-3 text-xs">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Shop Domain</label>
-            <input type="text" readonly value="ordersync-ygnacmly.myshopify.com" class="w-full bg-slate-50 px-3 py-2 rounded-lg border border-black/[0.08] font-mono text-black" />
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Webhook Secret (HMAC-SHA256 Base64)</label>
-            <input type="password" readonly value="f262e45a569a696199336cb4db1cc89484b1d6e387562a7d9a7ccc5cfa691aa5" class="w-full bg-slate-50 px-3 py-2 rounded-lg border border-black/[0.08] font-mono text-black" />
-          </div>
-        </div>
-      </div>
-
-      <div class="enterprise-card p-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-black/[0.06] pb-4">
-          <div>
-            <h3 class="text-base font-extrabold text-black font-heading">Amazon SP-API Gateway</h3>
-            <p class="text-xs text-slate-500">North America selling partner integration</p>
-          </div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Ready</span>
-        </div>
-
-        <div class="space-y-3 text-xs">
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Endpoint URI</label>
-            <input type="text" readonly value="/api/v1/webhooks/amazon" class="w-full bg-slate-50 px-3 py-2 rounded-lg border border-black/[0.08] font-mono text-black" />
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700 mb-1">Database Idempotency</label>
-            <input type="text" readonly value="100% Unique Index Enforcement on external_order_id" class="w-full bg-slate-50 px-3 py-2 rounded-lg border border-black/[0.08] text-black font-medium" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 4: Texas Security & TDPSA Compliance -->
+  <!-- TAB 3: Texas Security & TDPSA Compliance -->
   <div *ngIf="activeTab === 'security'" class="space-y-6">
     <!-- Texas Regulatory Banner -->
     <div class="enterprise-card p-6 md:p-8 bg-linear-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl shadow-xl">

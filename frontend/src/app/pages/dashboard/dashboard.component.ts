@@ -323,7 +323,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Module: Metrics & BI
   metrics: ExecutiveMetrics | null = null;
   metricsLoading = false;
-  metricsCategory: 'financial' | 'logistics' | 'customers' | 'inventory' | 'telemetry' | 'channels' | 'returns' = 'financial';
+  metricsCategory: 'financial' | 'logistics' | 'customers' | 'inventory' | 'telemetry' | 'returns' = 'financial';
 
   get returnReasons(): Array<{ reason: string; label: string; count: number; percentage: number; color: string }> {
     const list = this.metrics?.returns?.reasonsBreakdown;
@@ -699,7 +699,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   allNavModules: Array<{ key: ActiveModule; label: string; category: string; description: string }> = [
     { key: 'dashboard', label: 'Dashboard Overview', category: 'Core Platform', description: 'Real-time KPIs, channel breakdown and order stream' },
     { key: 'metrics', label: 'Business Metrics & BI', category: 'Core Platform', description: 'Executive sales analytics, financial margins and SLA' },
-    { key: 'channels', label: 'Sales Channels (APIs)', category: 'Core Platform', description: 'Live connectivity for Shopify and Amazon SP-API' },
     { key: 'inventory', label: 'Inventory & Stock', category: 'Core Platform', description: 'Product catalog, real-time stock and sync engine' },
     { key: 'suppliers', label: 'Suppliers & Procurement', category: 'Core Platform', description: 'Supply chain partners and restock purchase orders' },
     { key: 'customers', label: 'Customer Directory', category: 'Core Platform', description: 'Centralized directory of client accounts and addresses' },
@@ -715,14 +714,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       description: 'Full master access and control across the entire platform',
       color: 'purple',
       isSystem: true,
-      allowedModules: ['dashboard', 'metrics', 'channels', 'inventory', 'suppliers', 'customers', 'users', 'logistics', 'returns', 'devops']
+      allowedModules: ['dashboard', 'metrics', 'inventory', 'suppliers', 'customers', 'users', 'logistics', 'returns', 'devops']
     },
     {
       name: 'Operator',
       description: 'Standard day-to-day operations for orders, inventory and logistics',
       color: 'blue',
       isSystem: true,
-      allowedModules: ['dashboard', 'channels', 'inventory', 'logistics', 'returns']
+      allowedModules: ['dashboard', 'inventory', 'logistics', 'returns']
     }
   ];
 
@@ -2524,6 +2523,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.showToast(`Error ping DB: ${err.message || 'Error'}`);
       }
     });
+  }
+
+  loadDevopsTelemetry() {
+    this.loadHealth();
+  }
+
+  pingDevopsDatabase() {
+    this.pingDatabaseNow();
   }
 
   setDevopsLogFilter(filter: string) {

@@ -69,23 +69,7 @@
           </div>
         </button>
 
-        <!-- 3. Sales Channels -->
-        <button
-          *ngIf="canAccessModule('channels')"
-          type="button"
-          (click)="setActiveModule('channels')"
-          [ngClass]="activeModule === 'channels' ? 'nav-item-active' : ''"
-          class="nav-item"
-        >
-          <div class="flex items-center space-x-2.5">
-            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-            </svg>
-            <span>{{ t.modChannels }}</span>
-          </div>
-        </button>
-
-        <!-- 4. Inventory & Stock -->
+        <!-- 3. Inventory & Stock -->
         <button
           *ngIf="canAccessModule('inventory')"
           type="button"
@@ -504,22 +488,7 @@
                 <span>{{ t.tabApiTelemetry }}</span>
               </button>
 
-              <!-- Tab 6: Comparativa Canales -->
-              <button
-                type="button"
-                (click)="metricsCategory = 'channels'"
-                class="px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-2 transition-all"
-                [ngClass]="metricsCategory === 'channels' 
-                  ? 'bg-slate-900 text-white shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
-              >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                <span>{{ t.tabShopifyVsAmazon }}</span>
-              </button>
-
-              <!-- Tab 7: Devoluciones & RMA -->
+              <!-- Tab 6: Devoluciones & RMA -->
               <button
                 type="button"
                 (click)="metricsCategory = 'returns'"
@@ -1473,123 +1442,7 @@
         </div>
 
         <!-- ========================================================================= -->
-        <!-- TAB 6: COMPARATIVA DE CANALES (Shopify vs Amazon) -->
-        <!-- ========================================================================= -->
-        <div *ngIf="metricsCategory === 'channels'" class="space-y-5">
-          <div class="border-b border-slate-200 pb-2">
-            <h3 class="text-sm font-bold text-slate-900">{{ t.channelComparisonTitle }}</h3>
-            <p class="text-xs text-slate-500">{{ t.channelComparisonDesc }}</p>
-          </div>
-
-          <!-- Visual Comparison Bars (Head-to-Head) -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Revenue Ratio Bar -->
-            <div class="formal-card p-4 space-y-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ t.revenueByChannel }}</span>
-              <div class="flex justify-between text-xs font-bold pt-1">
-                <span class="text-emerald-700">Shopify ({{ donutShopifyPercent }}%)</span>
-                <span class="text-amber-700">Amazon ({{ donutAmazonPercent }}%)</span>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
-                <div class="bg-emerald-600 h-2.5 transition-all duration-500" [style.width.%]="donutShopifyPercent"></div>
-                <div class="bg-amber-500 h-2.5 flex-1"></div>
-              </div>
-              <div class="flex justify-between text-[11px] font-mono text-slate-500">
-                <span>{{ (metrics?.sales?.shopifyRevenue || 0) | currency:'USD':'symbol':'1.0-0' }}</span>
-                <span>{{ (metrics?.sales?.amazonRevenue || 0) | currency:'USD':'symbol':'1.0-0' }}</span>
-              </div>
-            </div>
-
-            <!-- Orders Ratio Bar -->
-            <div class="formal-card p-4 space-y-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ t.orderVolumeByChannel }}</span>
-              <div class="flex justify-between text-xs font-bold pt-1">
-                <span class="text-emerald-700">Shopify ({{ metrics?.sales?.shopifyOrders || 0 }})</span>
-                <span class="text-amber-700">Amazon ({{ metrics?.sales?.amazonOrders || 0 }})</span>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
-                <div
-                  class="bg-emerald-600 h-2.5 transition-all duration-500"
-                  [style.width.%]="(metrics?.sales?.totalOrders || 0) > 0 ? ((metrics?.sales?.shopifyOrders || 0) / (metrics?.sales?.totalOrders || 1) * 100) : 55"
-                ></div>
-                <div class="bg-amber-500 h-2.5 flex-1"></div>
-              </div>
-              <div class="flex justify-between text-[11px] font-mono text-slate-500">
-                <span>{{ (metrics?.sales?.shopifyOrders || 0) }} {{ t.ordersCountUnit }}</span>
-                <span>{{ (metrics?.sales?.amazonOrders || 0) }} {{ t.ordersCountUnit }}</span>
-              </div>
-            </div>
-
-            <!-- Average Order Value (AOV) Comparison -->
-            <div class="formal-card p-4 space-y-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ t.aovByChannel }}</span>
-              <div class="flex justify-between text-xs font-bold pt-1">
-                <span class="text-emerald-700">{{ shopifyAov | currency:'USD':'symbol':'1.0-0' }}</span>
-                <span class="text-amber-700">{{ amazonAov | currency:'USD':'symbol':'1.0-0' }}</span>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
-                <div class="bg-emerald-600 h-2.5" style="width: 52%"></div>
-                <div class="bg-amber-500 h-2.5 flex-1"></div>
-              </div>
-              <div class="flex justify-between text-[11px] font-mono text-slate-500">
-                <span>{{ t.shopifyAdvantage }}</span>
-                <span>{{ t.amazonAdvantage }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="formal-card p-5">
-            <div class="overflow-x-auto">
-              <table class="min-w-full formal-table text-left">
-                <thead>
-                  <tr>
-                    <th>{{ t.colChannelName }}</th>
-                    <th>{{ t.colChannelOrders }}</th>
-                    <th>{{ t.colChannelVolume }}</th>
-                    <th>{{ t.colChannelTicket }}</th>
-                    <th>{{ t.colChannelFulfillment }}</th>
-                    <th>{{ t.colLatency }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="font-bold text-slate-900 flex items-center gap-2">
-                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                      <span>Shopify Online Store</span>
-                    </td>
-                    <td class="font-semibold text-slate-800">{{ metrics?.sales?.shopifyOrders || 0 }}</td>
-                    <td class="font-mono font-bold text-emerald-700">{{ (metrics?.sales?.shopifyRevenue || 0) | currency:'USD' }}</td>
-                    <td class="font-mono text-slate-700">{{ shopifyAov | currency:'USD' }}</td>
-                    <td class="text-xs text-slate-600">DHL Express / Merchant Fulfilled</td>
-                    <td>
-                      <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {{ t.slaFastBadge }}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold text-slate-900 flex items-center gap-2">
-                      <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                      <span>Amazon Marketplace (SP-API)</span>
-                    </td>
-                    <td class="font-semibold text-slate-800">{{ metrics?.sales?.amazonOrders || 0 }}</td>
-                    <td class="font-mono font-bold text-amber-700">{{ (metrics?.sales?.amazonRevenue || 0) | currency:'USD' }}</td>
-                    <td class="font-mono text-slate-700">{{ amazonAov | currency:'USD' }}</td>
-                    <td class="text-xs text-slate-600">FBA / Amazon Logistics Priority</td>
-                    <td>
-                      <span class="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {{ t.slaNormalBadge }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ========================================================================= -->
-        <!-- TAB 7: DEVOLUCIONES, REEMBOLSOS Y RMA -->
+        <!-- TAB 6: DEVOLUCIONES, REEMBOLSOS Y RMA -->
         <!-- ========================================================================= -->
         <div *ngIf="metricsCategory === 'returns'" class="space-y-5">
           <div class="border-b border-slate-200 pb-2">
@@ -1766,104 +1619,7 @@
       </section>
 
       <!-- ========================================================================= -->
-      <!-- MODULE 2: CANALES DE VENTA (Shopify Store & Admin API) -->
-      <!-- ========================================================================= -->
-      <section *ngIf="activeModule === 'channels'" class="space-y-5">
-        <div class="max-w-3xl">
-          <!-- Shopify Card (Official Store & Admin API) -->
-          <div class="formal-card p-6 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <span>Shopify Store & Admin API</span>
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                </h3>
-                <p class="text-xs text-slate-500 font-mono mt-0.5">ordersync-ygnacmly.myshopify.com</p>
-              </div>
-              <span class="px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                100% Connected
-              </span>
-            </div>
-
-            <div class="bg-slate-50 rounded-lg p-3.5 text-xs space-y-2.5 border border-slate-200">
-              <div class="flex justify-between items-center">
-                <span class="text-slate-500 font-medium">Official Store:</span>
-                <span class="font-mono font-bold text-slate-900">ordersync-ygnacmly.myshopify.com</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-slate-500 font-medium">API Version:</span>
-                <span class="font-mono font-semibold text-slate-800">2024-01 (Admin REST)</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-slate-500 font-medium">Webhook Ingestion:</span>
-                <span class="font-mono text-emerald-700 font-bold">Active (HMAC SHA-256)</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-slate-500 font-medium">Synced Events:</span>
-                <span class="font-mono text-slate-700 text-[11px]">orders/create, fulfillments, refunds</span>
-              </div>
-            </div>
-
-            <!-- Admin API Token Configuration -->
-            <div class="space-y-1.5 pt-1">
-              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                Admin API Token (shpat_...):
-              </label>
-              <div class="flex gap-2">
-                <input
-                  type="password"
-                  [(ngModel)]="shopifyAdminToken"
-                  placeholder="Paste your shpat_... token"
-                  class="formal-input font-mono text-xs flex-1"
-                />
-                <button
-                  type="button"
-                  (click)="saveShopifyAdminToken()"
-                  [disabled]="savingShopifyToken || !shopifyAdminToken"
-                  class="btn-formal-secondary px-4 py-1.5 text-xs font-semibold disabled:opacity-40"
-                >
-                  {{ savingShopifyToken ? 'Saving...' : 'Save' }}
-                </button>
-              </div>
-              <p class="text-[10px] text-slate-400">
-                Generated at: Shopify Admin &gt; Apps &gt; Develop apps &gt; Create app &gt; Admin API access token.
-              </p>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                (click)="testShopifyApiConnection()"
-                [disabled]="testingShopifyApi"
-                class="btn-formal-secondary text-xs py-2.5 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <svg *ngIf="testingShopifyApi" class="animate-spin w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>{{ testingShopifyApi ? 'Testing...' : 'Test API Connection' }}</span>
-              </button>
-
-              <button
-                type="button"
-                (click)="syncShopifyOrdersNow()"
-                [disabled]="syncingShopifyApi"
-                class="btn-formal-primary text-xs py-2.5 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <svg *ngIf="syncingShopifyApi" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>{{ syncingShopifyApi ? 'Syncing...' : 'Sync Orders Now' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================================================================= -->
-      <!-- MODULE 3: INVENTARIO Y PEDIDOS (RFS-03 Unified Stock) -->
+      <!-- MODULE 2: INVENTARIO Y PEDIDOS (RFS-03 Unified Stock) -->
       <!-- ========================================================================= -->
       <section *ngIf="activeModule === 'inventory'" class="space-y-5">
         <div class="formal-card p-5 space-y-4">
@@ -4187,7 +3943,7 @@
               <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
               </svg>
-              {{ t.devopsTabContainers }}
+              <span>Multi-Cloud (Vercel · Render · Neon)</span>
             </button>
 
             <button
@@ -4347,44 +4103,239 @@
             </div>
           </div>
 
-          <!-- TAB CONTENT 2: CONTAINERS & DOCKER -->
-          <div *ngIf="devopsActiveSubTab === 'containers'" class="p-5 space-y-4">
-            <div class="border-b border-slate-200 pb-2 flex items-center justify-between">
+          <!-- TAB CONTENT 2: MULTI-CLOUD ARCHITECTURE (VERCEL + RENDER + NEON) -->
+          <div *ngIf="devopsActiveSubTab === 'containers'" class="p-5 space-y-5">
+            <div class="border-b border-slate-200 pb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Docker Compose Orchestration</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Topología de microservicios con dependencias y health checks configurados</p>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span>Topología de Producción Multi-Cloud</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">100% Cloud Native</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Infraestructura distribuida y sincronizada en tiempo real con Neon PostgreSQL, Render y Vercel</p>
               </div>
-              <span class="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">docker-compose.yml (v3.8)</span>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="pingDevopsDatabase()"
+                  [disabled]="devopsPingLoading"
+                  class="btn-formal-secondary px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <svg *ngIf="devopsPingLoading" class="animate-spin w-3 h-3 text-slate-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>{{ devopsPingLoading ? 'Comprobando...' : '⚡ Ping Neon DB' }}</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="loadDevopsTelemetry()"
+                  class="btn-formal-secondary px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  <span>Refrescar Telemetría</span>
+                </button>
+              </div>
             </div>
 
+            <!-- 3 Modern Cloud Architecture Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div *ngFor="let c of devopsTelemetry?.containers" class="p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-bold text-slate-900 font-mono">{{ c.name }}</span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                    {{ c.status | uppercase }}
-                  </span>
-                </div>
-                <p class="text-xs text-slate-600">{{ c.role }}</p>
-                <div class="text-[11px] space-y-1 text-slate-500 border-t border-slate-200 pt-2 font-mono">
-                  <div class="flex justify-between">
-                    <span>Host Port:</span>
-                    <span class="text-slate-800 font-semibold">{{ c.port }}</span>
+              <!-- Pillar 1: VERCEL FRONTEND -->
+              <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <div class="w-6 h-6 rounded-md bg-black text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                        ▲
+                      </div>
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-900">Vercel Edge</h4>
+                        <p class="text-[10px] text-slate-500">Frontend Global CDN</p>
+                      </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      LIVE
+                    </span>
                   </div>
-                  <div class="flex justify-between">
-                    <span>Healthcheck:</span>
-                    <span class="text-emerald-700 font-medium truncate max-w-[170px]" [title]="c.healthcheck">{{ c.healthcheck }}</span>
+
+                  <div class="mt-3 space-y-2 text-[11px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Framework:</span>
+                      <span class="font-semibold text-slate-800">Angular 17 (App Builder)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Distribución:</span>
+                      <span class="font-semibold text-slate-800">Anycast Global Edge</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Seguridad:</span>
+                      <span class="text-emerald-700 font-semibold font-mono">TLS 1.3 / HTTP/3</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Dominio:</span>
+                      <a href="https://order-sync-green.vercel.app" target="_blank" class="font-mono text-indigo-600 hover:text-indigo-800 truncate max-w-[150px] underline">
+                        order-sync-green.vercel.app
+                      </a>
+                    </div>
                   </div>
                 </div>
+
+                <a
+                  href="https://order-sync-green.vercel.app"
+                  target="_blank"
+                  class="btn-formal-secondary w-full py-1.5 text-xs text-center flex items-center justify-center gap-1.5 font-semibold text-slate-700 hover:text-black"
+                >
+                  <span>Abrir Frontend en Vercel</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </a>
+              </div>
+
+              <!-- Pillar 2: RENDER BACKEND -->
+              <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <div class="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                        R
+                      </div>
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-900">Render Cloud</h4>
+                        <p class="text-[10px] text-slate-500">Backend Web Service</p>
+                      </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      HEALTHY
+                    </span>
+                  </div>
+
+                  <div class="mt-3 space-y-2 text-[11px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Runtime:</span>
+                      <span class="font-semibold text-slate-800">Node.js 20+ Express</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Tiempo Real:</span>
+                      <span class="text-emerald-700 font-semibold font-mono">WebSockets (Socket.IO)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Shopify Webhooks:</span>
+                      <span class="text-indigo-600 font-semibold font-mono">/api/v1/webhooks/shopify</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Servicio API:</span>
+                      <a [href]="apiBase + '/health'" target="_blank" class="font-mono text-indigo-600 hover:text-indigo-800 truncate max-w-[150px] underline">
+                        ordersync-backend-kxbl.onrender.com
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  [href]="apiBase + '/health'"
+                  target="_blank"
+                  class="btn-formal-secondary w-full py-1.5 text-xs text-center flex items-center justify-center gap-1.5 font-semibold text-slate-700 hover:text-black"
+                >
+                  <span>Verificar /health en Render</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                </a>
+              </div>
+
+              <!-- Pillar 3: NEON POSTGRESQL -->
+              <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <div class="w-6 h-6 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                        🐘
+                      </div>
+                      <div>
+                        <h4 class="text-xs font-bold text-slate-900">Neon Cloud</h4>
+                        <p class="text-[10px] text-slate-500">Serverless PostgreSQL</p>
+                      </div>
+                    </div>
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      [ngClass]="devopsTelemetry?.database?.status === 'connected' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'"
+                    >
+                      {{ devopsTelemetry?.database?.status === 'connected' ? 'CONNECTED' : 'CHECK' }}
+                    </span>
+                  </div>
+
+                  <div class="mt-3 space-y-2 text-[11px]">
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Región AWS:</span>
+                      <span class="font-semibold text-slate-800">us-east-2 (Ohio)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Connection Pool:</span>
+                      <span class="font-semibold text-emerald-700">PgBouncer Pooled (TLS)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Latencia Actual:</span>
+                      <span class="font-mono font-bold" [ngClass]="(devopsTelemetry?.database?.latencyMs <= 600 && devopsTelemetry?.database?.latencyMs >= 0) ? 'text-emerald-700' : 'text-amber-700'">
+                        {{ devopsTelemetry?.database?.latencyMs >= 0 ? (devopsTelemetry?.database?.latencyMs + ' ms') : '---' }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span class="text-slate-500">Branch:</span>
+                      <span class="font-mono text-slate-800 font-semibold">production (HEAD)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="pingDevopsDatabase()"
+                  class="btn-formal-secondary w-full py-1.5 text-xs text-center flex items-center justify-center gap-1.5 font-semibold text-teal-700 hover:text-teal-900 cursor-pointer"
+                >
+                  <span>Probar Ping de Latencia</span>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </button>
               </div>
             </div>
 
-            <!-- Terminal hint for container management -->
-            <div class="bg-slate-900 text-slate-200 rounded-lg p-3.5 font-mono text-xs">
-              <span class="text-slate-400 select-none"># CLI Docker Management Quick Reference:</span><br/>
-              <span class="text-emerald-400">docker-compose up -d --build</span> <span class="text-slate-400"># Start all containers in background</span><br/>
-              <span class="text-emerald-400">docker-compose ps</span> <span class="text-slate-400"># Check health & port mappings</span><br/>
-              <span class="text-emerald-400">docker-compose logs -f backend</span> <span class="text-slate-400"># Stream live logs</span>
+            <!-- Visual Multi-Cloud Pipeline Diagram -->
+            <div class="bg-slate-900 text-white rounded-xl p-4 space-y-3 shadow-inner">
+              <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                <span class="font-mono font-bold text-slate-300 uppercase tracking-wider">Flujo de Datos y Eventos en Producción</span>
+                <span class="text-emerald-400 font-mono text-[11px] flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  Conexión Activa 24/7
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-center text-xs font-mono">
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700">
+                  <div class="text-[10px] text-slate-400 uppercase">1. Origen</div>
+                  <div class="font-bold text-emerald-400 mt-1">Shopify Store</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Webhooks HMAC SHA-256</div>
+                </div>
+
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700">
+                  <div class="text-[10px] text-slate-400 uppercase">2. Backend</div>
+                  <div class="font-bold text-indigo-400 mt-1">Render Cloud API</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Ingestión & WebSocket Server</div>
+                </div>
+
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700">
+                  <div class="text-[10px] text-slate-400 uppercase">3. Almacenamiento</div>
+                  <div class="font-bold text-teal-400 mt-1">Neon PostgreSQL</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Pool AWS us-east-2 (AES-256)</div>
+                </div>
+
+                <div class="p-2.5 rounded bg-slate-800/80 border border-slate-700">
+                  <div class="text-[10px] text-slate-400 uppercase">4. Interfaz</div>
+                  <div class="font-bold text-purple-400 mt-1">Vercel Edge App</div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">Angular 17 en Tiempo Real</div>
+                </div>
+              </div>
             </div>
           </div>
 

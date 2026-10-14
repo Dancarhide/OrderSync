@@ -17,7 +17,7 @@ import { environment } from '../../../environments/environment';
   styleUrl: './settings.component.css'
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'general' | 'roles' | 'channels' | 'security' = 'general';
+  activeTab: 'general' | 'roles' | 'security' = 'general';
   currentUserEmail = localStorage.getItem('ordersync_email') || 'admin@ordersync.app';
   currentRole: UserRole = (localStorage.getItem('ordersync_role') as UserRole) || 'Admin';
 
