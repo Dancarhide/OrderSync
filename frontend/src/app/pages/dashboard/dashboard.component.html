@@ -4891,40 +4891,33 @@
 
 <!-- ================= MODAL 1: ORDEN DE SURTIDO INTERACTIVA (GLOBAL) ================= -->
 <div *ngIf="showRestockModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
-    <!-- Modal Header -->
-    <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="p-1 rounded bg-slate-800 text-purple-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-sm font-bold">Issue Restock Order to Supplier</h3>
-          <p class="text-[11px] text-slate-300">Select product, unit quantity, and receive stock into warehouse</p>
-        </div>
+  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+    <!-- Modal Header (Clean Light Formal Header) -->
+    <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 tracking-tight">Issue Restock Order to Supplier</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Select product, unit quantity, and receive stock into warehouse</p>
       </div>
       <button
         type="button"
         (click)="closeRestockModal()"
-        class="text-slate-400 hover:text-white transition-colors"
+        class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
         title="Close"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
 
-    <!-- Modal Body Form -->
-    <div class="p-5 space-y-4 text-xs">
+    <!-- Modal Body Form (Scrollable Container) -->
+    <div class="p-5 space-y-4 text-xs overflow-y-auto flex-1">
       <!-- Select Supplier -->
       <div>
         <label class="block font-semibold text-slate-700 mb-1">1. Assigned Supplier</label>
         <select
           [(ngModel)]="restockSupplier"
-          class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+          class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-medium"
         >
           <option *ngFor="let sup of suppliers" [ngValue]="sup">
             {{ sup.name }} — {{ sup.category }} (Lead Time: {{ sup.lead_time_days }}d, {{ sup.country }})
@@ -4954,7 +4947,7 @@
             type="button"
             (click)="restockUnits = 10"
             [ngClass]="restockUnits === 10 ? 'btn-formal-primary' : 'btn-formal-secondary'"
-            class="px-2.5 py-1 text-xs rounded"
+            class="px-3 py-1 text-xs rounded transition-all font-semibold"
           >
             +10
           </button>
@@ -4962,7 +4955,7 @@
             type="button"
             (click)="restockUnits = 25"
             [ngClass]="restockUnits === 25 ? 'btn-formal-primary' : 'btn-formal-secondary'"
-            class="px-2.5 py-1 text-xs rounded"
+            class="px-3 py-1 text-xs rounded transition-all font-semibold"
           >
             +25
           </button>
@@ -4970,7 +4963,7 @@
             type="button"
             (click)="restockUnits = 50"
             [ngClass]="restockUnits === 50 ? 'btn-formal-primary' : 'btn-formal-secondary'"
-            class="px-2.5 py-1 text-xs rounded"
+            class="px-3 py-1 text-xs rounded transition-all font-semibold"
           >
             +50
           </button>
@@ -4978,7 +4971,7 @@
             type="button"
             (click)="restockUnits = 100"
             [ngClass]="restockUnits === 100 ? 'btn-formal-primary' : 'btn-formal-secondary'"
-            class="px-2.5 py-1 text-xs rounded"
+            class="px-3 py-1 text-xs rounded transition-all font-semibold"
           >
             +100
           </button>
@@ -4993,17 +4986,17 @@
       </div>
 
       <!-- Live Financial Breakdown Card -->
-      <div class="p-3 bg-slate-50 border border-slate-200 rounded space-y-1.5 text-[11px]">
+      <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
         <div class="flex justify-between text-slate-600">
-          <span>Supplier Unit Cost:</span>
+          <span class="font-medium">Supplier Unit Cost:</span>
           <span class="font-mono font-semibold text-slate-900">{{ (selectedRestockProduct?.unit_cost || 45) | currency:'USD' }}</span>
         </div>
         <div class="flex justify-between text-slate-600">
-          <span>Total Units to Receive:</span>
+          <span class="font-medium">Total Units to Receive:</span>
           <span class="font-mono font-semibold text-purple-700">+{{ restockUnits }} u.</span>
         </div>
         <div class="flex justify-between text-slate-600">
-          <span>Estimated Lead Time:</span>
+          <span class="font-medium">Estimated Lead Time:</span>
           <span class="font-semibold text-slate-900 flex items-center gap-1">
             <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -5011,15 +5004,15 @@
             {{ restockSupplier?.lead_time_days || 3 }} business days
           </span>
         </div>
-        <div class="border-t border-slate-200 pt-1.5 flex justify-between font-bold text-xs text-slate-900">
+        <div class="border-t border-slate-200 pt-2 flex justify-between font-bold text-xs text-slate-900">
           <span>Total Purchase Order Cost:</span>
           <span class="text-emerald-700 font-mono text-sm">{{ estimatedRestockCost | currency:'USD' }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Modal Actions -->
-    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+    <!-- Modal Actions (Fixed Bottom Bar) -->
+    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
       <button
         type="button"
         (click)="closeRestockModal()"
@@ -5032,7 +5025,7 @@
         type="button"
         (click)="confirmRestockOrder()"
         [disabled]="restockLoading || restockUnits <= 0"
-        class="btn-formal-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5"
+        class="btn-formal-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5 shadow-xs"
       >
         <svg *ngIf="restockLoading" class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -5049,34 +5042,27 @@
 
 <!-- ================= MODAL 2: CREAR / EDITAR PROVEEDOR (GLOBAL) ================= -->
 <div *ngIf="showSupplierModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
-    <!-- Modal Header -->
-    <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="p-1 rounded bg-slate-800 text-purple-400">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-sm font-bold">{{ editingSupplier ? 'Edit Supplier' : 'Register New Supplier' }}</h3>
-          <p class="text-[11px] text-slate-300">Enter supplier details and supply chain parameters</p>
-        </div>
+  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+    <!-- Modal Header (Clean Light Formal Header) -->
+    <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 tracking-tight">{{ editingSupplier ? 'Edit Supplier' : 'Register New Supplier' }}</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Enter supplier details and supply chain parameters</p>
       </div>
       <button
         type="button"
         (click)="closeSupplierModal()"
-        class="text-slate-400 hover:text-white transition-colors"
+        class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
         title="Close"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
 
-    <!-- Form Body -->
-    <div class="p-5 space-y-3 text-xs">
+    <!-- Form Body (Scrollable Container) -->
+    <div class="p-5 space-y-3 text-xs overflow-y-auto flex-1">
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Company / Supplier Name *</label>
         <input
@@ -5151,8 +5137,8 @@
       </div>
     </div>
 
-    <!-- Modal Footer -->
-    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+    <!-- Modal Footer (Fixed Bottom Bar) -->
+    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
       <button
         type="button"
         (click)="closeSupplierModal()"
@@ -5165,7 +5151,7 @@
         type="button"
         (click)="saveSupplier()"
         [disabled]="supplierSaving || !supplierForm.name"
-        class="btn-formal-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5"
+        class="btn-formal-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5 shadow-xs"
       >
         <svg *ngIf="supplierSaving" class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
