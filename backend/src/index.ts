@@ -2177,7 +2177,7 @@ app.get('/api/security/audit-logs', async (_req, res) => {
 });
 
 // Texas Official Privacy Notice Endpoint
-app.get('/api/security/privacy-notice', (_req, res) => {
+app.get('/api/security/privacy-notice', (_req: express.Request, res: express.Response) => {
   res.json({
     effectiveDate: 'September 2026',
     jurisdiction: 'State of Texas, United States (TDPSA & Tex. Bus. & Com. Code Ch. 521)',
