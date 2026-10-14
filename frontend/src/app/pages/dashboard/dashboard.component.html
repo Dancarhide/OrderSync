@@ -4594,23 +4594,6 @@
 
               <button
                 type="button"
-                (click)="triggerSimulateShopifyRefund()"
-                [disabled]="isSimulating"
-                class="btn-formal-secondary px-2.5 py-0.5 text-xs font-medium flex items-center gap-1 border-purple-300 text-purple-700 bg-purple-50 hover:bg-purple-100 disabled:opacity-50 cursor-pointer shadow-2xs"
-                title="Dispara una simulación en tiempo real de devolución y webhook de Shopify"
-              >
-                <svg *ngIf="!isSimulating" class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-                <svg *ngIf="isSimulating" class="w-3 h-3 animate-spin text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>{{ t.retBtnSimulateRefund }}</span>
-              </button>
-
-              <button
-                type="button"
                 (click)="seedDemoReturns()"
                 [disabled]="returnsLoading"
                 class="btn-formal-secondary px-2 py-0.5 text-xs flex items-center gap-1 text-slate-600 cursor-pointer"
@@ -4838,32 +4821,24 @@
                         </svg>
                       </div>
                       <p class="font-semibold text-xs text-slate-700">No hay solicitudes de devolución registradas con los filtros actuales.</p>
-                      <p class="text-[11px] text-slate-400">Puedes probar el ciclo completo de RMA simulando un webhook de Shopify o cargando datos de prueba.</p>
+                      <p class="text-[11px] text-slate-400">Las solicitudes de devolución se sincronizan en vivo a través de los webhooks de Shopify o puedes registrarlas manualmente.</p>
                       <div class="flex items-center justify-center gap-2 pt-1">
                         <button
                           type="button"
-                          (click)="triggerSimulateShopifyRefund()"
-                          [disabled]="isSimulating"
+                          (click)="openReturnModal()"
                           class="btn-formal-primary px-3 py-1 text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
-                          <svg *ngIf="!isSimulating" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                           </svg>
-                          <span>{{ t.retBtnSimulateRefund }}</span>
+                          <span>{{ t.retBtnRegister }}</span>
                         </button>
                         <button
                           type="button"
-                          (click)="seedDemoReturns()"
+                          (click)="loadReturns()"
                           class="btn-formal-secondary px-3 py-1 text-xs cursor-pointer"
                         >
-                          {{ t.retBtnSeedDemo }}
-                        </button>
-                        <button
-                          type="button"
-                          (click)="openReturnModal()"
-                          class="btn-formal-secondary px-3 py-1 text-xs cursor-pointer"
-                        >
-                          {{ t.retBtnRegister }}
+                          {{ t.invRefresh }}
                         </button>
                       </div>
                     </div>
