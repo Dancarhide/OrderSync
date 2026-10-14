@@ -35,6 +35,9 @@ const io = new Server(server, {
   }
 });
 
+// Enable trust proxy for Cloudflare Tunnel and reverse proxies
+app.set('trust proxy', 1);
+
 // Security Middlewares (Texas Data Security & OWASP Standards)
 app.use(helmet({
   contentSecurityPolicy: false,
@@ -80,6 +83,8 @@ app.post('/api/auth/mfa/setup', setupMfa);
 app.post('/api/auth/mfa/verify', verifyAndEnableMfa);
 app.post('/api/auth/mfa/disable', disableMfa);
 app.post('/api/v1/webhooks/shopify', handleWebhook(io));
+app.post('/api/v1/webhooks/orders/shopify', handleWebhook(io));
+app.post('/api/v1/webhooks/orders', handleWebhook(io));
 app.post('/api/v1/webhooks/amazon', handleWebhook(io));
 
 // Shopify Official API Endpoints
