@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>OrderSync Enterprise - Manual Integral: Estándares de Calidad de Texas, ISO 27001 y Módulos</title>
+<style>
+  @page {
+    size: A4;
+    margin: 1.6cm 1.4cm 1.8cm 1.4cm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+  }
+
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+    margin-top: 1.3em;
+    margin-bottom: 0.45em;
+  }
+
+  /* Portada */
+  .cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 90vh;
+    padding: 2.8rem;
+    background: linear-gradient(135deg, #090d16 0%, #171d3d 50%, #2e0854 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover-badge-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: rgba(147, 51, 234, 0.35);
+    border: 1px solid rgba(192, 132, 252, 0.6);
+    color: #f3e8ff;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cover-badge-texas {
+    background: rgba(220, 38, 38, 0.35);
+    border: 1px solid rgba(248, 113, 113, 0.6);
+    color: #fee2e2;
+  }
+
+  .cover-badge-iso {
+    background: rgba(16, 185, 129, 0.35);
+    border: 1px solid rgba(52, 211, 153, 0.6);
+    color: #d1fae5;
+  }
+
+  .cover h1 {
+    font-size: 32pt;
+    line-height: 1.15;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+  }
+
+  .cover-subtitle {
+    font-size: 14pt;
+    color: #cbd5e1;
+    font-weight: 300;
+    margin-bottom: 1.8rem;
+    max-width: 680px;
+    line-height: 1.45;
+  }
+
+  .cover-meta {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    padding-top: 1.4rem;
+  }
+
+  .cover-meta-item {
+    font-size: 8.5pt;
+  }
+
+  .cover-meta-label {
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 7.2pt;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  .cover-meta-val {
+    color: #f8fafc;
+    font-weight: 600;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  .section-header {
+    border-bottom: 2px solid #6366f1;
+    padding-bottom: 6px;
+    margin-top: 1.8rem;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-tag {
+    background: #e0e7ff;
+    color: #4338ca;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  .section-tag-texas {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .section-tag-iso {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  h2 {
+    font-size: 15pt;
+    color: #1e1b4b;
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 11.5pt;
+    color: #334155;
+    margin-top: 1.2rem;
+    margin-bottom: 0.35rem;
+    border-left: 3px solid #6366f1;
+    padding-left: 8px;
+  }
+
+  p {
+    margin-top: 0.35em;
+    margin-bottom: 0.65em;
+    text-align: justify;
+  }
+
+  /* Tarjetas */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin: 10px 0 16px 0;
+  }
+
+  .card-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 10px 0 16px 0;
+  }
+
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+  }
+
+  .card-title {
+    font-weight: 700;
+    font-size: 9.5pt;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .card-desc {
+    font-size: 8.5pt;
+    color: #475569;
+    line-height: 1.4;
+  }
+
+  /* Callouts */
+  .callout {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 8.8pt;
+    line-height: 1.45;
+  }
+
+  .callout-info {
+    background-color: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    color: #1e40af;
+  }
+
+  .callout-success {
+    background-color: #ecfdf5;
+    border-left: 4px solid #10b981;
+    color: #065f46;
+  }
+
+  .callout-texas {
+    background-color: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+  }
+
+  .callout-security {
+    background-color: #faf5ff;
+    border-left: 4px solid #a855f7;
+    color: #581c87;
+  }
+
+  /* Tablas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px 0;
+    font-size: 8.5pt;
+  }
+
+  th {
+    background-color: #0f172a;
+    color: #ffffff;
+    text-align: left;
+    padding: 6px 9px;
+    font-weight: 600;
+    font-size: 7.8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: 6px 9px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  /* Insignias */
+  .badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 7.2pt;
+    font-weight: 600;
+  }
+  .badge-purple { background: #f3e8ff; color: #7e22ce; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-slate { background: #e2e8f0; color: #334155; }
+
+  /* Diagramas */
+  .diagram-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 7.8pt;
+    line-height: 1.35;
+    margin: 10px 0;
+    overflow-x: hidden;
+  }
+
+  ul, ol {
+    margin-top: 0.3em;
+    margin-bottom: 0.55em;
+    padding-left: 1.25rem;
+  }
+
+  li {
+    margin-bottom: 0.25em;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 8.2pt;
+    color: #0f172a;
+  }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover">
+  <div class="cover-badge-group">
+    <span class="cover-badge cover-badge-texas">Sede Central: Houston, Texas (EE. UU.)</span>
+    <span class="cover-badge cover-badge-iso">Estándar ISO/IEC 27001:2022</span>
+    <span class="cover-badge">TDPSA & Código 521</span>
+  </div>
+  <h1>OrderSync Enterprise</h1>
+  <div class="cover-subtitle">Manual Integral de Calidad, Arquitectura Criptográfica y Operación de los 11 Módulos</div>
+  <p style="color: #cbd5e1; font-size: 9.5pt; max-width: 650px; line-height: 1.5;">
+    Guía completa que documenta las regulaciones de calidad y privacidad del Estado de Texas, la justificación jurídica y técnica de la norma ISO 27001, y el funcionamiento exhaustivo de cada módulo del sistema en entornos de alta demanda.
+  </p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Jurisdicción y Sede</div>
+      <div class="cover-meta-val">Houston, Texas, EE. UU. (Hub Central)</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Leyes de Texas Implementadas</div>
+      <div class="cover-meta-val">TDPSA (Cap. 541) & Código 521 (Sec. 521.052/053)</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Seguridad de la Información</div>
+      <div class="cover-meta-val">ISO/IEC 27001:2022 / AES-256-CBC / KMS / TOTP</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Infraestructura y Nube</div>
+      <div class="cover-meta-val">PostgreSQL Neon Serverless (SSL) + Socket.io</div>
+    </div>
+  </div>
+</div>
+
+<!-- ÍNDICE GENERAL -->
+<div class="page-break">
+  <div class="section-header">
+    <span class="section-tag">Índice General</span>
+    <h2>Estructura del Manual</h2>
+  </div>
+
+  <table style="font-size: 8.8pt;">
+    <thead>
+      <tr>
+        <th style="width: 14%;">Sección</th>
+        <th style="width: 48%;">Tema Principal</th>
+        <th style="width: 38%;">Objetivos y Normativas</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Capítulo 1</strong></td>
+        <td>Visión General de OrderSync y Arquitectura</td>
+        <td>Problemática del eCommerce multicanal y sincronización en tiempo real.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 2</strong></td>
+        <td>Estándares de Calidad y Leyes del Estado de Texas</td>
+        <td>TDPSA (Cap. 541), Texas Code Cap. 521, DSR, anonimización y notificación OAG.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 3</strong></td>
+        <td>¿Por qué Texas Exige la Norma ISO 27001?</td>
+        <td>Fundamento jurídico: Medidas razonables, Cláusula Safe Harbor y TCSAC.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 4</strong></td>
+        <td>Desglose Exhaustivo de los 11 Módulos</td>
+        <td>Funcionalidades, botones, pantallas y aportes de calidad de cada módulo.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 5</strong></td>
+        <td>Ciclo de Vida E2E: De la Venta al Restock</td>
+        <td>Flujo paso a paso con trazabilidad criptográfica y auditoría forense.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 6</strong></td>
+        <td>Credenciales, Roles y Puertos de Operación</td>
+        <td>Acceso seguro, matriz de permisos RBAC y directivas de producción.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-texas">
+    <strong>Enfoque Territorial de Calidad:</strong> OrderSync fue diseñado bajo los requerimientos comerciales y regulatorios de <strong>Texas</strong>, estado que concentra el 44% de las operaciones logísticas del sistema (Hub Houston-Austin-Dallas). Toda la plataforma está alineada con el estándar de ciberseguridad más exigente de los Estados Unidos.
+  </div>
+</div>
+
+<!-- CAPÍTULO 1: INTRODUCCIÓN Y ARQUITECTURA -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 1</span>
+    <h2>Visión General de OrderSync y Arquitectura</h2>
+  </div>
+
+  <h3>¿Qué es OrderSync?</h3>
+  <p>
+    <strong>OrderSync</strong> es un Sistema de Gestión de Pedidos e Inventario Omnicanal (OMS) diseñado para unificar en tiempo real las operaciones comerciales de empresas de comercio electrónico que venden simultáneamente en <strong>Shopify</strong>, <strong>Amazon Seller Central</strong>, <strong>Mercado Libre</strong> y <strong>WooCommerce</strong>.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title">⚡ Sincronización en < 150ms</div>
+      <div class="card-desc">Evita la sobreventa deduciendo el stock inmediatamente en todos los canales conectados al ocurrir una compra.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🛡️ Cifrado de Grado Bancario</div>
+      <div class="card-desc">Los datos sensibles de los clientes (PII) viajan y se guardan cifrados con AES-256-CBC en Neon PostgreSQL.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔄 Gestión de Retornos (RMA)</div>
+      <div class="card-desc">Ciclo de vida completo de devoluciones con restock físico automático y sincronización de órdenes a estado 'refunded'.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Observabilidad DevOps</div>
+      <div class="card-desc">Telemetría de CPU, RAM, contenedores Docker y streaming de logs por WebSockets para soporte de misión crítica.</div>
+    </div>
+  </div>
+
+  <h3>Diagrama de Flujo de Datos y Eventos</h3>
+  <div class="diagram-box">
+┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐
+│     Shopify     │  │   Amazon Seller  │  │  Mercado Libre  │
+│  (Webhooks HMAC)│  │    (REST API)    │  │   (OAuth/API)   │
+└────────┬────────┘  └────────┬─────────┘  └────────┬────────┘
+         │                    │                     │
+         ▼                    ▼                     ▼
+┌────────────────────────────────────────────────────────────┐
+│              BACKEND DE ORDERSYNC (Node.js/TypeScript)    │
+│  • Verificador Criptográfico HMAC-SHA256                   │
+│  • Motor de Cifrado AES-256-CBC (ISO 27001 / Texas 521)    │
+│  • Deductor Atómico de Inventario Multicanal               │
+│  • Gestor de Derechos de Privacidad TDPSA (§ 541)          │
+└────────┬────────────────────┬─────────────────────┬────────┘
+         │                    │                     │
+         ▼                    ▼                     ▼
+┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐
+│ Neon PostgreSQL │  │   Socket.io      │  │ Logística       │
+│ Serveless (SSL) │  │  (Eventos Vivos) │  │ (DHL/FedEx/Est) │
+└─────────────────┘  └────────┬─────────┘  └─────────────────┘
+                              │
+                              ▼
+                   ┌───────────────────────┐
+                   │ FRONTEND ANGULAR v17  │
+                   │  Dashboard Omnicanal  │
+                   └───────────────────────┘
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 2: CALIDAD DE TEXAS -->
+<div>
+  <div class="section-header">
+    <span class="section-tag section-tag-texas">Capítulo 2</span>
+    <h2>Estándares de Calidad y Leyes del Estado de Texas</h2>
+  </div>
+
+  <p>
+    La sede operativa de OrderSync está situada en <strong>Houston, Texas</strong>. Por ello, la arquitectura del software no utiliza patrones genéricos de desarrollo, sino que implementa rigurosamente el marco regulatorio del Estado de Texas:
+  </p>
+
+  <h3>1. Texas Data Privacy and Security Act (TDPSA - Tex. Bus. & Com. Code § 541)</h3>
+  <p>
+    Entrada en vigor el <strong>1 de julio de 2024</strong>, la ley TDPSA es una de las legislaciones de privacidad más avanzadas de los Estados Unidos. Establece que los consumidores tienen derechos explícitos sobre el tratamiento de su información personal.
+  </p>
+  <ul>
+    <li><strong>Derecho al Olvido y Supresión (Sec. 541.051):</strong> OrderSync incluye el endpoint nativo <code>POST /api/security/dsr/erasure/:customerId</code>. Al recibir una solicitud, el sistema reemplaza inmediatamente el nombre y teléfono del cliente por <code>ANONYMIZED_TDPSA_CONSUMER</code> y la dirección por <code>REDACTED_PER_TEXAS_DATA_PRIVACY_ACT</code>.</li>
+    <li><strong>Preservación Tributaria Legal (Sec. 541.055):</strong> Conforme a la legislación fiscal de Texas, el sistema disocia la identidad del comprador pero **conserva intactos los montos numéricos, impuestos y registros contables** durante 7 años para auditorías del <em>Texas Comptroller of Public Accounts</em> (Contralor de Cuentas Públicas de Texas).</li>
+    <li><strong>Aviso de Privacidad Obligatorio:</strong> La aplicación publica de forma programática el endpoint <code>GET /api/security/texas-privacy-notice</code> con el desglose exigido de categorías de datos recolectados y su finalidad operativa.</li>
+  </ul>
+
+  <h3>2. Texas Identity Theft Enforcement and Protection Act (Capítulo 521)</h3>
+  <ul>
+    <li><strong>Deber de Salvaguardar la Información (Sec. 521.052):</strong> Exige a cualquier empresa en Texas implementar medidas de seguridad estrictas para proteger información confidencial. OrderSync cumple este mandato cifrando en reposo toda PII con <strong>AES-256-CBC</strong> y vectores de inicialización (IV) aleatorios por fila.</li>
+    <li><strong>Protocolo de Notificación de Brechas (Sec. 521.053):</strong> Obliga a notificar cualquier incidente de seguridad de datos en menos de 60 días a los consumidores afectados, y de forma mandatoria al <strong>Fiscal General de Texas (Office of the Attorney General - OAG)</strong> si la brecha involucra a 500 o más residentes de Texas. OrderSync cuenta con una bitácora inmutable de auditoría forense para sustentar investigaciones oficiales.</li>
+  </ul>
+
+  <h3>3. Protección de Infraestructura (Texas DIR / Cybersecurity Framework)</h3>
+  <p>
+    El Departamento de Recursos de Información de Texas (Texas DIR) dicta las normas para evitar colapsos en sistemas digitales. OrderSync incorpora limitadores de tasa (Rate Limiting) en Express para neutralizar ataques de denegación de servicio (DDoS) y fuerza bruta en los endpoints de autenticación.
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 3: POR QUÉ TEXAS PIDE ISO 27001 -->
+<div>
+  <div class="section-header">
+    <span class="section-tag section-tag-iso">Capítulo 3</span>
+    <h2>¿Por qué Texas Exige la Norma ISO/IEC 27001:2022?</h2>
+  </div>
+
+  <p>
+    Una pregunta habitual de directores de tecnología y auditores es: <em>"Si Texas ya tiene sus propias leyes estatales (TDPSA y Cap. 521), ¿por qué también exige o recomienda formalmente la certificación ISO 27001?"</em>. La respuesta radica en la estructura jurídica y operativa del estado:
+  </p>
+
+  <div class="callout callout-texas">
+    <strong>El Principio Jurídico de "Medidas Razonables de Seguridad":</strong> El <em>Texas Business and Commerce Code § 521.052</em> exige a las organizaciones implementar <em>"reasonable security procedures and practices"</em>. Sin embargo, la ley estatal no define los miles de controles técnicos detallados. Por jurisprudencia de los tribunales de Texas y las directrices del Procurador General (OAG), la norma internacional <strong>ISO/IEC 27001:2022</strong> es el estándar de oro reconocido para demostrar que una empresa cumplió con esa debida diligencia.
+  </div>
+
+  <h3>Las 4 Razones Fundamentales por las que Texas Pide ISO 27001</h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title">1. Protección Legal "Safe Harbor"</div>
+      <div class="card-desc">
+        Ante una investigación de la Fiscalía General de Texas por un ciberataque, contar con un Sistema de Gestión de Seguridad de la Información (SGSI) basado en ISO 27001 exime o mitiga drásticamente las sanciones económicas multimillonarias al demostrar que no hubo negligencia empresarial.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">2. Alineación con Texas Cybersecurity Framework</div>
+      <div class="card-desc">
+        El estándar oficial del Estado (TCSAC) emitido por el Texas DIR está mapeado directamente con el Anexo A de ISO 27001. Cumplir ISO 27001 garantiza automáticamente la homologación con los requerimientos de ciberseguridad del gobierno texano.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">3. Exigencia en Contratos B2B en Texas</div>
+      <div class="card-desc">
+        Los gigantes logísticos y de retail con base en Houston, Dallas y Austin (Dell, Sysco, H-E-B, etc.) exigen contractualmente a sus socios tecnológicos e integradores de software estar certificados en ISO 27001 para permitirles conectarse a sus cadenas de suministro.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">4. Trazabilidad Forense Inmutable</div>
+      <div class="card-desc">
+        El control ISO 27001 A.8.15 (Logging) exige el registro inalterable de accesos. Si un operador consulta la dirección de un cliente, queda un rastro auditable que satisface los requerimientos forenses de los juzgados del Estado de Texas.
+      </div>
+    </div>
+  </div>
+
+  <h3>Matriz de Correspondencia: Ley de Texas vs. Controles ISO 27001 en OrderSync</h3>
+  <table style="font-size: 8.3pt;">
+    <thead>
+      <tr>
+        <th>Exigencia Legal de Texas</th>
+        <th>Control ISO/IEC 27001:2022</th>
+        <th>Implementación Concreta en OrderSync</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Tex. Bus. & Com. Code § 521.052</strong><br>(Salvaguarda de PII)</td>
+        <td><strong>A.8.24: Uso de Criptografía</strong></td>
+        <td>Cifrado AES-256-CBC de extremo a extremo en la base de datos Neon con rotación de claves KMS.</td>
+      </tr>
+      <tr>
+        <td><strong>Tex. Bus. & Com. Code § 521.053</strong><br>(Notificación e Investigación)</td>
+        <td><strong>A.8.15: Registro de Eventos (Logs)</strong></td>
+        <td>Tabla inmutable <code>audit_logs</code> que registra usuario, IP, módulo y acción en cada visualización de datos.</td>
+      </tr>
+      <tr>
+        <td><strong>Texas DIR Guideline</strong><br>(Autenticación de Acceso)</td>
+        <td><strong>A.5.17: Información de Autenticación</strong></td>
+        <td>Doble Factor de Autenticación (MFA/TOTP) obligatorio y hashing seguro de contraseñas con salt.</td>
+      </tr>
+      <tr>
+        <td><strong>TDPSA § 541.051</strong><br>(Control de Datos Personales)</td>
+        <td><strong>A.8.11: Enmascaramiento de Datos</strong></td>
+        <td>Data Masking en la interfaz gráfica (solo los roles autorizados pueden presionar "Revelar PII").</td>
+      </tr>
+      <tr>
+        <td><strong>Texas Business & Commerce § 541.101</strong><br>(Evaluaciones de Impacto)</td>
+        <td><strong>A.5.8: Seguridad de la Información en Proyectos</strong></td>
+        <td>Arquitectura <em>Security-by-Design</em> que valida firmas criptográficas HMAC en cada webhook entrante.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 4: LOS 11 MÓDULOS DE ORDERSYNC (PARTE 1) -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 4</span>
+    <h2>Desglose Exhaustivo de los 11 Módulos del Sistema</h2>
+  </div>
+
+  <!-- MODULO 1 -->
+  <h3>1. Dashboard Principal (Resumen Operativo & Órdenes)</h3>
+  <p>
+    El corazón visual del sistema. Consolida en una sola pantalla los eventos multicanal con latencia inferior a 150 ms gracias a WebSockets.
+  </p>
+  <ul>
+    <li><strong>Tarjetas KPI en Vivo:</strong> Facturación del día en USD, total de pedidos recibidos, latencia de sincronización en milisegundos y contador de productos en nivel crítico de inventario.</li>
+    <li><strong>Monitor de Pedidos Multicanal:</strong> Tabla unificada con filtros dinámicos por canal (Shopify, Amazon, Mercado Libre) y estados de pago.</li>
+    <li><strong>Botón 'Devolución / RMA':</strong> Permite registrar un reclamo de cliente directamente desde la orden, precargando el ID del pedido, el SKU, el cliente y el importe exacto.</li>
+    <li><strong>Inspección de PII con Auditoría:</strong> Permite visualizar los ítems del pedido; el nombre y dirección del cliente se muestran enmascarados hasta que un usuario autorizado solicita su revelación.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Centraliza la visibilidad de los pedidos del Hub de Texas, asegurando cumplimiento de SLA de despacho en menos de 24 horas.</li>
+  </ul>
+
+  <!-- MODULO 2 -->
+  <h3>2. Métricas y Analítica Avanzada (Metrics)</h3>
+  <p>
+    Panel de inteligencia de negocios para directores de operaciones y analistas financieros.
+  </p>
+  <ul>
+    <li><strong>Distribución de Ventas por Canal:</strong> Gráficos que comparan el volumen y rentabilidad neta generada por cada marketplace.</li>
+    <li><strong>Curvas de Latencia Percentil (P95 y P99):</strong> Monitorea los tiempos de respuesta de las APIs de comercio para identificar cuellos de botella antes de que afecten al cliente.</li>
+    <li><strong>AOV (Average Order Value) y Tasa de Cumplimiento:</strong> Métricas de ticket promedio y porcentaje de pedidos despachados dentro de la ventana de compromiso.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Reporta la concentración de pedidos en el Hub de Texas (44%) para optimizar la asignación de inventario regional.</li>
+  </ul>
+
+  <!-- MODULO 3 -->
+  <h3>3. Canales Omnicanal e Integraciones (Channels)</h3>
+  <p>
+    Consola de gobernanza técnica para la vinculación con plataformas externas de venta.
+  </p>
+  <ul>
+    <li><strong>Conector Oficial de Shopify:</strong> Soporta REST Admin API y GraphQL para consultas masivas de catálogo y suscripción a Webhooks.</li>
+    <li><strong>Conectores Amazon SP-API y Mercado Libre:</strong> Gestión de credenciales OAuth 2.0 y sincronización periódica de listados.</li>
+    <li><strong>Verificación HMAC-SHA256:</strong> Cada webhook recibido es verificado matemáticamente contra el secreto del canal antes de aceptar la orden.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Cumple con el estándar de integridad de datos del Texas DIR, impidiendo que peticiones falsas o maliciosas inyecten órdenes no autorizadas.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 4: LOS 11 MÓDULOS (PARTE 2) -->
+<div>
+  <!-- MODULO 4 -->
+  <h3>4. Control de Inventario Centralizado (Inventory)</h3>
+  <p>
+    Catálogo unificado maestro que garantiza la paridad absoluta de stock en todas las tiendas.
+  </p>
+  <ul>
+    <li><strong>Catálogo Maestro por SKU:</strong> Ficha técnica con SKU universal, código de barras, nombre, costo de compra, precio de venta e imagen.</li>
+    <li><strong>Gestión de Stock Tripartito:</strong> Stock físico en almacén, stock comprometido en pedidos en tránsito y stock neto disponible para venta.</li>
+    <li><strong>Alertas de Reorden Inteligentes:</strong> Notificaciones visuales de color ámbar y rojo cuando las unidades caen por debajo del umbral mínimo de seguridad.</li>
+    <li><strong>Botón de Sincronización Forzada:</strong> Actualiza al instante el inventario de un producto en Shopify y Amazon con un solo clic.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Previene la infracción comercial por falsa publicidad o venta de artículos agotados, protegida por el Código de Comercio de Texas.</li>
+  </ul>
+
+  <!-- MODULO 5 -->
+  <h3>5. Gestión de Proveedores y Compras (Suppliers)</h3>
+  <p>
+    Administración de la cadena de suministro inicial y el reabastecimiento de bodegas.
+  </p>
+  <ul>
+    <li><strong>Directorio Maestro de Proveedores:</strong> Registro de fabricantes (ej. Apex Global Electronics en Texas) con plazos de entrega (lead times) y términos de crédito.</li>
+    <li><strong>Generación de Órdenes de Compra (PO):</strong> Creación de pedidos formales a proveedores con costos unitarios pactados.</li>
+    <li><strong>Recepción con Ingreso Automático a Stock:</strong> Al confirmar la llegada del embarque al almacén, el sistema incrementa automáticamente las existencias del catálogo.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Documenta la procedencia de la mercancía y preserva la cadena de custodia exigida por las aduanas y reguladores comerciales.</li>
+  </ul>
+
+  <!-- MODULO 6 -->
+  <h3>6. Directorio CRM y Clientes (Customers)</h3>
+  <p>
+    Expediente centralizado de compradores con estrictas medidas de protección de datos personales.
+  </p>
+  <ul>
+    <li><strong>Perfil Unificado Multicanal:</strong> Vincula todas las transacciones de una misma persona aunque compre por distintos canales.</li>
+    <li><strong>Cálculo de LTV (Lifetime Value):</strong> Muestra el valor acumulado del cliente y su lealtad comercial.</li>
+    <li><strong>Botón de Ejercicio de Derechos TDPSA:</strong> Permite tramitar solicitudes de borrado o acceso de datos personales en un solo paso.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Centro neurálgico del cumplimiento del Capítulo 541 del Código de Texas (TDPSA) y de la confidencialidad de la información.</li>
+  </ul>
+
+  <!-- MODULO 7 -->
+  <h3>7. Usuarios, Roles y Permisos RBAC (Users)</h3>
+  <p>
+    Control de acceso basado en roles con separación estricta de funciones operativas y de seguridad.
+  </p>
+  <ul>
+    <li><strong>Roles Preconfigurados:</strong>
+      <ul>
+        <li><span class="badge badge-purple">SuperAdmin</span>: Acceso total e ilimitado a los 11 módulos, auditoría, llaves criptográficas y devops.</li>
+        <li><span class="badge badge-blue">Admin</span>: Gestión operativa completa de pedidos, inventario y logística sin acceso a infraestructura.</li>
+        <li><span class="badge badge-green">Operator</span>: Acceso enfocado a despacho de órdenes, inventario y procesamiento de devoluciones.</li>
+        <li><span class="badge badge-amber">Auditor</span>: Permiso exclusivo de solo lectura para reportes financieros, métricas y bitácoras de seguridad.</li>
+      </ul>
+    </li>
+    <li><strong>Matriz de Permisos Granular:</strong> Permite habilitar o inhabilitar individualmente cualquiera de los 11 módulos para usuarios específicos.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Satisface el principio de mínimo privilegio exigido por la norma ISO 27001 (A.5.15) y las directrices de ciberseguridad del Estado de Texas.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 4: LOS 11 MÓDULOS (PARTE 3) -->
+<div>
+  <!-- MODULO 8 -->
+  <h3>8. Seguridad, Cumplimiento y Cifrado (Security)</h3>
+  <p>
+    Consola de supervisión de ciberseguridad, criptografía y gobernanza de la información.
+  </p>
+  <ul>
+    <li><strong>Monitor de Cifrado AES-256:</strong> Visualiza en tiempo real el estado de los datos en reposo y certifica que los registros estén protegidos con hashes y claves vigentes.</li>
+    <li><strong>Rotación Dinámica de Llaves (KMS):</strong> Permite recifrar la base de datos completa con una nueva clave maestra sin interrumpir las ventas en vivo.</li>
+    <li><strong>Visor de Bitácora de Auditoría Forense:</strong> Consulta inmutable de accesos con filtros por usuario, fecha, dirección IP y tipo de operación efectuada.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Es la evidencia documental directa para el cumplimiento del <em>Texas Code § 521.052</em> e inspecciones de la norma ISO/IEC 27001:2022.</li>
+  </ul>
+
+  <!-- MODULO 9 -->
+  <h3>9. Logística y Rastreo de Envíos (Logistics)</h3>
+  <p>
+    Control integral de la preparación de paquetes, despacho con mensajerías y entrega de última milla.
+  </p>
+  <ul>
+    <li><strong>Integración con Couriers Oficiales:</strong> Genera guías de envío compatibles con <strong>DHL Express</strong>, <strong>FedEx</strong>, <strong>Estafeta</strong> y <strong>UPS</strong>.</li>
+    <li><strong>Timeline de Checkpoints Interactivo:</strong> Visualiza las etapas del envío: <em>Orden Recibida ➔ En Preparación ➔ En Tránsito ➔ En Aduana ➔ En Reparto ➔ Entregado</em>.</li>
+    <li><strong>Detección Temprana de Incidencias:</strong> Alertas visuales sobre retrasos de transporte, direcciones incorrectas o intentos de entrega fallidos.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Optimiza las rutas hacia y desde el Hub Central de Texas, reduciendo costos de flete interestatal y tiempos de entrega.</li>
+  </ul>
+
+  <!-- MODULO 10 -->
+  <h3>10. Devoluciones y Reembolsos (Returns & Refunds / RMA)</h3>
+  <p>
+    Módulo integral para la gestión de retornos, satisfacción de garantía y reingreso a bodega.
+  </p>
+  <ul>
+    <li><strong>Ciclo de Vida de 4 Fases:</strong>
+      <ol>
+        <li><span class="badge badge-amber">requested</span>: Devolución solicitada por el comprador o por el agente de soporte.</li>
+        <li><span class="badge badge-blue">approved</span>: Caso analizado y aprobado; se emite la guía de retorno para el cliente.</li>
+        <li><span class="badge badge-green">received_restocked</span>: El paquete llega a almacén, pasa inspección física y <strong>se reingresa el stock al inventario automáticamente</strong>.</li>
+        <li><span class="badge badge-red">rejected</span>: Solicitud denegada por no cumplir las políticas de garantía o daños deliberados.</li>
+      </ol>
+    </li>
+    <li><strong>Actualización Automática de Órdenes:</strong> Al procesar la devolución con restock, el pedido en el sistema cambia inmediatamente a estado <code>refunded</code> (reembolsado).</li>
+    <li><strong>Integración con Webhooks de Reembolsos de Shopify:</strong> Si se emite un reembolso en el panel de Shopify, el webhook <code>refunds/create</code> crea la devolución en OrderSync de forma transparente.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Protege el derecho del consumidor bajo las leyes de garantía comercial de Texas y evita discrepancias contables.</li>
+  </ul>
+
+  <!-- MODULO 11 -->
+  <h3>11. DevOps, Monitoreo y Salud del Sistema (DevOps)</h3>
+  <p>
+    Centro de supervisión de infraestructura y observabilidad de microservicios en producción.
+  </p>
+  <ul>
+    <li><strong>Métricas de Hardware en Vivo:</strong> Porcentaje de uso de CPU, consumo de memoria RAM, lectura/escritura de disco y uptime del servidor.</li>
+    <li><strong>Salud de Contenedores Docker:</strong> Estado operativo (<em>Healthy / Running</em>) de los servicios de Node.js, frontend Angular y PostgreSQL Neon.</li>
+    <li><strong>Tuberías de CI/CD:</strong> Estado de compilaciones, suites de pruebas automatizadas y versiones desplegadas.</li>
+    <li><strong>Consola de Logs en Streaming:</strong> Transmisión por WebSockets de los registros del servidor con filtrado por niveles (<code>INFO</code>, <code>WARN</code>, <code>ERROR</code>, <code>FATAL</code>).</li>
+    <li><strong>Acciones de Resiliencia:</strong> Botones seguros para purgar memoria caché y reiniciar microservicios en caso de contingencia técnica.</li>
+    <li><strong>Aporte a la Calidad de Texas:</strong> Asegura una disponibilidad 24/7/365 superior al 99.9% exigida en acuerdos de nivel de servicio (SLA) corporativos de Texas.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 5: FLUJOS DE TRABAJO E2E -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 5</span>
+    <h2>Flujos Operativos Extremo a Extremo (E2E)</h2>
+  </div>
+
+  <h3>Flujo 1: Recepción de Pedido, Cifrado y Despacho</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th style="width: 8%;">Etapa</th>
+        <th style="width: 27%;">Disparador / Evento</th>
+        <th style="width: 35%;">Acción Interna de OrderSync</th>
+        <th style="width: 30%;">Garantía de Calidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Venta</strong></td>
+        <td>Compra realizada en tienda Shopify o Amazon.</td>
+        <td>Shopify emite webhook <code>orders/create</code> con firma HMAC.</td>
+        <td>Validación de firma criptográfica en el middleware.</td>
+      </tr>
+      <tr>
+        <td><strong>2. Cifrado</strong></td>
+        <td>Ingreso de datos personales al backend.</td>
+        <td>Se aplica AES-256-CBC al nombre, teléfono y dirección del cliente.</td>
+        <td>Cumplimiento directo con Texas Code § 521.052.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Stock</strong></td>
+        <td>Deducción automática de inventario.</td>
+        <td>Se descuenta <code>stock = stock - 1</code> en la base de datos Neon.</td>
+        <td>Prevención de sobreventa en los demás canales.</td>
+      </tr>
+      <tr>
+        <td><strong>4. En Vivo</strong></td>
+        <td>Emisión de eventos WebSocket.</td>
+        <td>El servidor emite <code>ORDER_CREATED</code> e <code>INVENTORY_UPDATED</code>.</td>
+        <td>Actualización en pantalla en menos de 150 milisegundos.</td>
+      </tr>
+      <tr>
+        <td><strong>5. Envío</strong></td>
+        <td>Operador asigna guía en Logística.</td>
+        <td>Se genera tracking DHL y se vincula al pedido.</td>
+        <td>Trazabilidad de entrega de última milla.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Flujo 2: Devolución, Restock en Bodega y Reembolso</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th style="width: 8%;">Etapa</th>
+        <th style="width: 27%;">Disparador / Evento</th>
+        <th style="width: 35%;">Acción Interna de OrderSync</th>
+        <th style="width: 30%;">Garantía de Calidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Solicitud</strong></td>
+        <td>Cliente pide retorno de mercancía.</td>
+        <td>Clic en botón <strong>Devolución / RMA</strong> de la orden en el Dashboard.</td>
+        <td>Generación de número RMA oficial (ej. <code>RET-2026-4821</code>).</td>
+      </tr>
+      <tr>
+        <td><strong>2. Aprobación</strong></td>
+        <td>Supervisor valida el motivo.</td>
+        <td>Se presiona <strong>Aprobar Devolución</strong> (estado <code>approved</code>).</td>
+        <td>Emisión de guía de recolección al cliente.</td>
+      </tr>
+      <tr>
+        <td><strong>3. Bodega</strong></td>
+        <td>El paquete arriba al almacén.</td>
+        <td>El bodeguero presiona <strong>Recibir e Ingresar a Stock</strong>.</td>
+        <td>El inventario suma las unidades: <code>stock = stock + quantity</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>4. Reembolso</strong></td>
+        <td>Acreditación del importe.</td>
+        <td>La orden cambia automáticamente a estado <code>refunded</code>.</td>
+        <td>Sincronización de libros contables y auditoría.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <strong>Trazabilidad Inmutable:</strong> Todo el ciclo de vida queda registrado con fecha, hora, usuario e IP en la tabla de auditoría (ISO 27001 A.8.15), garantizando transparencia ante cualquier litigio comercial o auditoría fiscal en el Estado de Texas.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 6: CREDENCIALES Y OPERACIÓN -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 6</span>
+    <h2>Credenciales, Configuración y Accesos al Sistema</h2>
+  </div>
+
+  <h3>Servicios Activos y Puntos de Conexión</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th>Componente</th>
+        <th>Dirección / Puerto</th>
+        <th>Tecnología</th>
+        <th>Función en el Ecosistema</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Frontend Web</strong></td>
+        <td><code>http://localhost:4200</code></td>
+        <td>Angular 17 Standalone</td>
+        <td>Interfaz de usuario, dashboard y control de los 11 módulos.</td>
+      </tr>
+      <tr>
+        <td><strong>API Backend</strong></td>
+        <td><code>http://localhost:3000</code></td>
+        <td>Node.js Express TypeScript</td>
+        <td>Lógica de negocio, cifrado AES-256 y API RESTful.</td>
+      </tr>
+      <tr>
+        <td><strong>WebSockets</strong></td>
+        <td><code>ws://localhost:3000</code></td>
+        <td>Socket.io Engine</td>
+        <td>Canal de eventos en vivo para órdenes, stock y logs.</td>
+      </tr>
+      <tr>
+        <td><strong>Base de Datos</strong></td>
+        <td><code>ep-billowing-fire-a4rfxljl.us-east-1.aws.neon.tech</code></td>
+        <td>PostgreSQL Neon Cloud</td>
+        <td>Almacenamiento relacional serverless con SSL forzado.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cuentas de Acceso Preconfiguradas en el Entorno</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th>Usuario / Correo</th>
+        <th>Contraseña</th>
+        <th>Rol Asignado</th>
+        <th>Módulos Habilitados</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>admin@ordersync.io</code></td>
+        <td><code>AdminPass123!</code></td>
+        <td><span class="badge badge-purple">SuperAdmin</span></td>
+        <td><strong>Todos los 11 módulos</strong> (Control total, seguridad, llaves y DevOps).</td>
+      </tr>
+      <tr>
+        <td><code>operator@ordersync.io</code></td>
+        <td><code>Operator123!</code></td>
+        <td><span class="badge badge-green">Operator</span></td>
+        <td>Dashboard, Inventario, Logística y Devoluciones.</td>
+      </tr>
+      <tr>
+        <td><code>auditor@ordersync.io</code></td>
+        <td><code>Auditor123!</code></td>
+        <td><span class="badge badge-amber">Auditor</span></td>
+        <td>Métricas, Seguridad, Clientes y Bitácora de Auditoría.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Soporte Bilingüe Reactivo</h3>
+  <p>
+    La aplicación está internacionalizada en <strong>Español</strong> e <strong>Inglés</strong> mediante el servicio <code>TranslationService</code>. El idioma se conmuta instantáneamente desde la barra de navegación superior sin perder el estado de la sesión ni las vistas activas.
+  </p>
+
+  <div style="margin-top: 2rem; padding: 1.2rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center;">
+    <div style="font-weight: 700; color: #0f172a; font-size: 11pt; margin-bottom: 4px;">OrderSync Enterprise v2.4</div>
+    <div style="font-size: 8.5pt; color: #64748b;">
+      Houston, Texas Headquarters — Hub Central de Operaciones Omnicanal.<br>
+      Alineado con TDPSA, Texas Business & Commerce Code Cap. 521 y la norma ISO/IEC 27001:2022.<br>
+      Documento confidencial para uso operativo y técnico exclusivo.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

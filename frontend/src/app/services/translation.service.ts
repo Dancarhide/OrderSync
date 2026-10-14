@@ -244,6 +244,7 @@ export interface Translations {
   allStatuses: string;
   statusPaid: string;
   statusPending: string;
+  statusRefunded: string;
   slaFilterTitle: string;
   slaFast: string;
   slaNormal: string;
@@ -351,6 +352,19 @@ export interface Translations {
   langSettingTitle: string;
   langDefaultDesc: string;
   langTransDesc: string;
+  devopsTabOverview: string;
+  devopsTabContainers: string;
+  devopsTabCicd: string;
+  devopsTabLogs: string;
+  devopsTabMetrics: string;
+  devopsPingDb: string;
+  devopsRefresh: string;
+  devopsMemoryUsage: string;
+  devopsConnectedSockets: string;
+  devopsStatusOperational: string;
+  devopsStatusDegraded: string;
+  devopsLogsFilterAll: string;
+  devopsClearLogs: string;
 
   // Settings View
   settingsTitle: string;
@@ -384,6 +398,9 @@ export interface Translations {
   retTitle: string;
   retSubtitle: string;
   retBtnRegister: string;
+  retBtnSimulateRefund: string;
+  retBtnSeedDemo: string;
+  retOrderAction: string;
   retSearchPlaceholder: string;
   retFilterStatusAll: string;
   retFilterReasonAll: string;
@@ -673,6 +690,7 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     allStatuses: 'All Statuses',
     statusPaid: 'Paid',
     statusPending: 'Pending',
+    statusRefunded: 'Refunded',
     slaFilterTitle: 'SLA Performance',
     slaFast: '≤ 2,000 ms (Fast)',
     slaNormal: '2,000 - 5,000 ms (Within SLA)',
@@ -725,8 +743,8 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     invAddUnits: '+20 Units',
 
     // Customers Module
-    custTitle: 'Customer Registry & Security',
-    custSubtitle: 'Encrypted at rest in PostgreSQL database (AES-256-GCM) with runtime in-memory decryption for order fulfillment.',
+    custTitle: 'Customer Directory',
+    custSubtitle: 'Centralized directory of customer accounts, contact details, delivery addresses, and orders.',
     custDecryptBtn: 'Decrypt Authorized View',
     custLockBtn: 'Lock Data (Mask)',
     custMaskedNotice: 'Masked View (Standard Operator)',
@@ -774,12 +792,25 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     telemetryUptimeTitle: 'Service Availability',
     telemetryUptimeDesc: 'Uptime',
     telemetrySlaTitle: 'Sync Latency SLA',
-    telemetrySlaTarget: 'Target: < 5,000 ms (Met)',
+    telemetrySlaTarget: 'Target: < 500 ms (Met)',
     telemetryDbTitle: 'Database Engine',
     telemetryDbDesc: 'Managed TLS Connection',
     langSettingTitle: 'System Operating Language',
     langDefaultDesc: 'Default language',
     langTransDesc: 'Latin America translation',
+    devopsTabOverview: 'Live Vitals',
+    devopsTabContainers: 'Containers & Docker',
+    devopsTabCicd: 'CI/CD Pipeline',
+    devopsTabLogs: 'Runtime Logs',
+    devopsTabMetrics: 'Prometheus Metrics',
+    devopsPingDb: 'Ping Database',
+    devopsRefresh: 'Refresh Telemetry',
+    devopsMemoryUsage: 'Memory (RSS / Heap)',
+    devopsConnectedSockets: 'Live Telemetry Clients',
+    devopsStatusOperational: 'Operational (Healthy)',
+    devopsStatusDegraded: 'Degraded Performance',
+    devopsLogsFilterAll: 'All Logs',
+    devopsClearLogs: 'Clear View',
 
     // Settings View
     settingsTitle: 'Settings & Workspace Configuration',
@@ -813,6 +844,9 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     retTitle: 'Returns & RMA Management',
     retSubtitle: 'Omnichannel returns processing, item inspection, and automatic inventory restock engine',
     retBtnRegister: 'Register Return',
+    retBtnSimulateRefund: 'Simulate Shopify Webhook',
+    retBtnSeedDemo: 'Seed Demo RMA',
+    retOrderAction: 'Return / RMA',
     retSearchPlaceholder: 'Search by RMA #, Order #, Customer or SKU...',
     retFilterStatusAll: 'All Statuses',
     retFilterReasonAll: 'All Reasons',
@@ -1101,6 +1135,7 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     allStatuses: 'Todos los Estados',
     statusPaid: 'Pagado',
     statusPending: 'Pendiente',
+    statusRefunded: 'Reembolsado',
     slaFilterTitle: 'Rendimiento SLA',
     slaFast: '≤ 2,000 ms (Rápido)',
     slaNormal: '2,000 - 5,000 ms (En SLA)',
@@ -1153,8 +1188,8 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     invAddUnits: '+20 Unidades',
 
     // Customers Module
-    custTitle: 'Directorio de Clientes y Seguridad',
-    custSubtitle: 'Cifrado obligatorio en reposo en PostgreSQL (AES-256-GCM) y descifrado seguro en memoria para gestión de órdenes.',
+    custTitle: 'Directorio de Clientes',
+    custSubtitle: 'Directorio centralizado de clientes, datos de contacto, direcciones de entrega e historial de pedidos.',
     custDecryptBtn: 'Descifrar Vista Autorizada',
     custLockBtn: 'Bloquear Datos (Enmascarar)',
     custMaskedNotice: 'Vista Enmascarada (Operador Estándar)',
@@ -1202,12 +1237,25 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     telemetryUptimeTitle: 'Disponibilidad del Servicio',
     telemetryUptimeDesc: 'Tiempo activo',
     telemetrySlaTitle: 'SLA de Latencia Sync',
-    telemetrySlaTarget: 'Objetivo: < 5,000 ms (Cumplido)',
+    telemetrySlaTarget: 'Objetivo: < 500 ms (Cumplido)',
     telemetryDbTitle: 'Motor de Base de Datos',
     telemetryDbDesc: 'Conexión TLS Administrada',
     langSettingTitle: 'Idioma Operativo del Sistema',
     langDefaultDesc: 'Idioma predeterminado',
     langTransDesc: 'Traducción completa para Latinoamérica',
+    devopsTabOverview: 'Métricas en Vivo',
+    devopsTabContainers: 'Contenedores y Docker',
+    devopsTabCicd: 'Pipeline CI/CD',
+    devopsTabLogs: 'Registros de Ejecución',
+    devopsTabMetrics: 'Métricas Prometheus',
+    devopsPingDb: 'Probar Conexión DB',
+    devopsRefresh: 'Actualizar Telemetría',
+    devopsMemoryUsage: 'Memoria (RSS / Heap)',
+    devopsConnectedSockets: 'Clientes de Telemetría Activos',
+    devopsStatusOperational: 'Operativo (Saludable)',
+    devopsStatusDegraded: 'Rendimiento Degradado',
+    devopsLogsFilterAll: 'Todos los Registros',
+    devopsClearLogs: 'Limpiar Vista',
 
     // Settings View
     settingsTitle: 'Configuración del Espacio de Trabajo',
@@ -1241,6 +1289,9 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     retTitle: 'Gestión de Devoluciones y RMA',
     retSubtitle: 'Procesamiento omnicanal de devoluciones, inspección de producto y reingreso automático al inventario',
     retBtnRegister: 'Registrar Devolución',
+    retBtnSimulateRefund: 'Simular Webhook Shopify',
+    retBtnSeedDemo: 'Cargar RMA de Prueba',
+    retOrderAction: 'Devolución / RMA',
     retSearchPlaceholder: 'Buscar por RMA #, Pedido, Cliente o SKU...',
     retFilterStatusAll: 'Todos los Estatus',
     retFilterReasonAll: 'Todos los Motivos',
@@ -1302,33 +1353,29 @@ export class TranslationService {
   constructor() {}
 
   private getInitialLanguage(): SupportedLanguage {
-    const saved = localStorage.getItem('ordersync_lang') as SupportedLanguage;
-    if (saved && (saved === 'en' || saved === 'es')) {
-      return saved;
-    }
+    localStorage.setItem('ordersync_lang', 'en');
     return 'en';
   }
 
   public get currentLanguage(): SupportedLanguage {
-    return this.currentLanguageSubject.value;
+    return 'en';
   }
 
   public get currentLang(): SupportedLanguage {
-    return this.currentLanguageSubject.value;
+    return 'en';
   }
 
   public get translations(): Translations {
-    return this.translationsSubject.value;
+    return DICTIONARY['en'];
   }
 
   public get t(): Translations {
-    return this.translationsSubject.value;
+    return DICTIONARY['en'];
   }
 
-  public setLanguage(lang: SupportedLanguage): void {
-    if (lang !== 'en' && lang !== 'es') return;
-    localStorage.setItem('ordersync_lang', lang);
-    this.currentLanguageSubject.next(lang);
-    this.translationsSubject.next(DICTIONARY[lang]);
+  public setLanguage(_lang: SupportedLanguage): void {
+    localStorage.setItem('ordersync_lang', 'en');
+    this.currentLanguageSubject.next('en');
+    this.translationsSubject.next(DICTIONARY['en']);
   }
 }

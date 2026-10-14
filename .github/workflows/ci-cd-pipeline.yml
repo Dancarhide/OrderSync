@@ -86,6 +86,17 @@ jobs:
           npm start &
           sleep 5 # wait for server to start
 
+      - name: Assert Health Probes & Metrics Exporter
+        run: |
+          echo "Testing Liveness Probe..."
+          curl --fail http://localhost:3000/live
+          echo "Testing Readiness Probe..."
+          curl --fail http://localhost:3000/ready
+          echo "Testing Comprehensive Health..."
+          curl --fail http://localhost:3000/health
+          echo "Testing Prometheus Metrics Endpoint..."
+          curl --fail http://localhost:3000/metrics
+
       - name: Run Webhook Simulation and Assert Latency
         working-directory: ./backend
         run: |

@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>OrderSync Enterprise - Manual Técnico y Operativo</title>
+<style>
+  @page {
+    size: A4;
+    margin: 1.8cm 1.5cm 2cm 1.5cm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+  }
+
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 700;
+    margin-top: 1.4em;
+    margin-bottom: 0.5em;
+  }
+
+  /* Portada */
+  .cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 90vh;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #311042 100%);
+    color: #ffffff;
+    border-radius: 18px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    background: rgba(147, 51, 234, 0.3);
+    border: 1px solid rgba(192, 132, 252, 0.5);
+    color: #e9d5ff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    width: fit-content;
+  }
+
+  .cover h1 {
+    font-size: 34pt;
+    line-height: 1.15;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+  }
+
+  .cover-subtitle {
+    font-size: 15pt;
+    color: #cbd5e1;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    max-width: 650px;
+    line-height: 1.4;
+  }
+
+  .cover-meta {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 1.5rem;
+  }
+
+  .cover-meta-item {
+    font-size: 9pt;
+  }
+
+  .cover-meta-label {
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.05em;
+    margin-bottom: 3px;
+  }
+
+  .cover-meta-val {
+    color: #f8fafc;
+    font-weight: 600;
+  }
+
+  /* Secciones y saltos */
+  .page-break {
+    page-break-after: always;
+  }
+
+  .section-header {
+    border-bottom: 2px solid #6366f1;
+    padding-bottom: 6px;
+    margin-top: 2rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-tag {
+    background: #e0e7ff;
+    color: #4338ca;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  h2 {
+    font-size: 16pt;
+    color: #1e1b4b;
+    margin: 0;
+  }
+
+  h3 {
+    font-size: 12pt;
+    color: #334155;
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+    border-left: 3px solid #8b5cf6;
+    padding-left: 8px;
+  }
+
+  p {
+    margin-top: 0.4em;
+    margin-bottom: 0.7em;
+    text-align: justify;
+  }
+
+  /* Tarjetas y Cajas */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 12px 0 18px 0;
+  }
+
+  .card-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 12px 0 18px 0;
+  }
+
+  .card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+  }
+
+  .card-title {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 8.5pt;
+    color: #475569;
+    line-height: 1.45;
+  }
+
+  /* Callouts */
+  .callout {
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+
+  .callout-info {
+    background-color: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    color: #1e40af;
+  }
+
+  .callout-success {
+    background-color: #ecfdf5;
+    border-left: 4px solid #10b981;
+    color: #065f46;
+  }
+
+  .callout-warning {
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    color: #92400e;
+  }
+
+  .callout-security {
+    background-color: #faf5ff;
+    border-left: 4px solid #a855f7;
+    color: #581c87;
+  }
+
+  /* Tablas */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px 0;
+    font-size: 8.5pt;
+  }
+
+  th {
+    background-color: #0f172a;
+    color: #ffffff;
+    text-align: left;
+    padding: 7px 10px;
+    font-weight: 600;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background-color: #f8fafc;
+  }
+
+  /* Insignias */
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 7.5pt;
+    font-weight: 600;
+  }
+  .badge-purple { background: #f3e8ff; color: #7e22ce; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .badge-slate { background: #e2e8f0; color: #334155; }
+
+  /* Diagramas de arquitectura */
+  .diagram-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 8pt;
+    line-height: 1.4;
+    margin: 12px 0;
+    overflow-x: hidden;
+  }
+
+  ul, ol {
+    margin-top: 0.3em;
+    margin-bottom: 0.6em;
+    padding-left: 1.3rem;
+  }
+
+  li {
+    margin-bottom: 0.3em;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 8.5pt;
+    color: #0f172a;
+  }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover">
+  <div class="cover-badge">Plataforma Omnicanal Enterprise</div>
+  <h1>OrderSync</h1>
+  <div class="cover-subtitle">Manual Integral de Funcionalidades, Arquitectura y Operación en Producción</div>
+  <p style="color: #94a3b8; font-size: 10pt; max-width: 600px;">
+    Documento técnico y operativo que detalla la totalidad de los 11 módulos del sistema, flujos de pedidos, sincronización en tiempo real, seguridad criptográfica ISO 27001, logística y devoluciones.
+  </p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Versión del Sistema</div>
+      <div class="cover-meta-val">OrderSync v2.4 Enterprise</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Base de Datos & Nube</div>
+      <div class="cover-meta-val">PostgreSQL Neon Serverless (SSL)</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Protocolos en Vivo</div>
+      <div class="cover-meta-val">WebSockets (Socket.io) + Webhooks HMAC</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Estándar de Seguridad</div>
+      <div class="cover-meta-val">ISO 27001 / GDPR / AES-256-CBC</div>
+    </div>
+  </div>
+</div>
+
+<!-- ÍNDICE DE CONTENIDOS -->
+<div class="page-break">
+  <div class="section-header">
+    <span class="section-tag">Índice</span>
+    <h2>Estructura del Manual</h2>
+  </div>
+
+  <table style="font-size: 9pt;">
+    <thead>
+      <tr>
+        <th style="width: 15%;">Sección</th>
+        <th style="width: 45%;">Contenido Principal</th>
+        <th style="width: 40%;">Módulos y Enfoque</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Capítulo 1</strong></td>
+        <td>Visión General y Propósito del Sistema</td>
+        <td>El problema del eCommerce fragmentado y la solución unificada.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 2</strong></td>
+        <td>Arquitectura Tecnológica & Stack</td>
+        <td>Frontend Angular, Backend Node.js/Express, Neon Cloud y Socket.io.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 3</strong></td>
+        <td>Seguridad y Cumplimiento Normativo</td>
+        <td>Cifrado AES-256 en reposo, enmascaramiento PII, KMS, MFA y Auditoría.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 4</strong></td>
+        <td>Los 11 Módulos Operativos (Detallados)</td>
+        <td>Explicación exhaustiva de cada pantalla y botón de la aplicación.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 5</strong></td>
+        <td>Ciclo de Vida E2E: De la Venta a la Devolución</td>
+        <td>Paso a paso de un pedido desde Shopify hasta el restock de devolución.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 6</strong></td>
+        <td>Monitoreo DevOps y Operaciones</td>
+        <td>CPU, RAM, Docker, Streaming de Logs, CI/CD y Healthcheck.</td>
+      </tr>
+      <tr>
+        <td><strong>Capítulo 7</strong></td>
+        <td>Guía Rápida de Acceso y Credenciales</td>
+        <td>Usuarios preconfigurados, roles y endpoints clave.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>Propósito de este documento:</strong> Este manual fue diseñado para directores de operaciones, desarrolladores, administradores de sistemas y operadores de almacén. Permite comprender con exactitud qué capacidades tiene el software, cómo interactúan sus componentes y cómo aprovecharlo al máximo.
+  </div>
+</div>
+
+<!-- CAPÍTULO 1: INTRODUCCIÓN Y ARQUITECTURA -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 1</span>
+    <h2>Visión General y Arquitectura Tecnológica</h2>
+  </div>
+
+  <h3>¿Qué es OrderSync?</h3>
+  <p>
+    <strong>OrderSync</strong> es un sistema centralizado de gestión de pedidos (OMS - <em>Order Management System</em>) e inventario multicanal en tiempo real. Resuelve el problema crítico de los vendedores que comercializan sus productos en múltiples plataformas digitales simultáneamente (Shopify, Amazon, Mercado Libre, WooCommerce) y sufren desfases de stock, sobreventas (<em>overselling</em>), demoras de sincronización y exposición indebida de datos personales de clientes.
+  </p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title">⚡ Sincronización Inmediata</div>
+      <div class="card-desc">Cada compra en cualquier canal se propaga en menos de 150 milisegundos a todos los demás canales, deduciendo inventario automáticamente.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🛡️ Privacidad Criptográfica</div>
+      <div class="card-desc">Los datos PII de los compradores (nombres, direcciones, teléfonos) se guardan cifrados con AES-256-CBC en la base de datos PostgreSQL.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔄 Ciclo Completo de RMA</div>
+      <div class="card-desc">Gestión integral de devoluciones y reembolsos con reingreso físico a inventario y sincronización de órdenes.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 DevOps & Observabilidad</div>
+      <div class="card-desc">Monitoreo interno con lectura de hardware, contenedores Docker, canalización CI/CD y consola de logs en vivo.</div>
+    </div>
+  </div>
+
+  <h3>Diagrama de Flujo de Datos y Canales</h3>
+  <div class="diagram-box">
+┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐
+│     Shopify     │  │   Amazon Seller  │  │  Mercado Libre  │
+│  (Webhooks HMAC)│  │    (REST API)    │  │   (OAuth/API)   │
+└────────┬────────┘  └────────┬─────────┘  └────────┬────────┘
+         │                    │                     │
+         ▼                    ▼                     ▼
+┌────────────────────────────────────────────────────────────┐
+│              BACKEND DE ORDERSYNC (Node.js/Express)        │
+│  - Verificación Criptográfica HMAC                         │
+│  - Cifrado de Datos Personales (AES-256-CBC)               │
+│  - Deducción Atómica de Stock / Restock                    │
+│  - Motor de Reglas de Enrutamiento Logístico               │
+└────────┬────────────────────┬─────────────────────┬────────┘
+         │                    │                     │
+         ▼                    ▼                     ▼
+┌─────────────────┐  ┌──────────────────┐  ┌─────────────────┐
+│ Neon PostgreSQL │  │   Socket.io      │  │ Paqueterías     │
+│ Cloud (Cifrada) │  │  (Eventos Vivos) │  │ (DHL/FedEx/Est) │
+└─────────────────┘  └────────┬─────────┘  └─────────────────┘
+                              │
+                              ▼
+                   ┌───────────────────────┐
+                   │ FRONTEND ANGULAR v17  │
+                   │ Dashboard Multicanal  │
+                   └───────────────────────┘
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 2: SEGURIDAD Y CUMPLIMIENTO -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 2</span>
+    <h2>Seguridad, Cifrado y Cumplimiento Normativo</h2>
+  </div>
+
+  <p>
+    OrderSync implementa una arquitectura de seguridad de nivel bancario diseñada para cumplir con los estándares internacionales <strong>ISO 27001</strong> y el Reglamento General de Protección de Datos (<strong>GDPR</strong>).
+  </p>
+
+  <div class="callout callout-security">
+    <strong>Principio de Confidencialidad en Reposo:</strong> Ningún dato de identificación personal (PII) de un comprador se almacena en texto plano en la base de datos. Si una persona no autorizada accede a la base de datos Neon PostgreSQL, únicamente visualizará cadenas cifradas con el prefijo <code>ENC[...]</code>.
+  </div>
+
+  <h3>Pilares de Ciberseguridad de OrderSync</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th>Mecanismo</th>
+        <th>Algoritmo / Estándar</th>
+        <th>Aplicación Práctica</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Cifrado de PII</strong></td>
+        <td>AES-256-CBC con IV único</td>
+        <td>Cifra el nombre, teléfono, notas y dirección de envío del comprador en cada orden y devolución.</td>
+      </tr>
+      <tr>
+        <td><strong>Gestión de Llaves</strong></td>
+        <td>KMS (Key Management)</td>
+        <td>Manejo aislado de la clave maestra con soporte para rotación programada sin desconexión del servicio.</td>
+      </tr>
+      <tr>
+        <td><strong>Autenticación Multifactor</strong></td>
+        <td>TOTP / RFC 6238</td>
+        <td>Generación de código QR compatible con Google Authenticator y Microsoft Authenticator para acceso seguro.</td>
+      </tr>
+      <tr>
+        <td><strong>Validación de Webhooks</strong></td>
+        <td>HMAC-SHA256</td>
+        <td>Comprueba que las notificaciones de compra o reembolso provengan auténticamente de los servidores de Shopify.</td>
+      </tr>
+      <tr>
+        <td><strong>Trazabilidad y Auditoría</strong></td>
+        <td>Immutable Audit Log</td>
+        <td>Registra qué usuario, desde qué IP y a qué hora descifró o visualizó información de un cliente.</td>
+      </tr>
+      <tr>
+        <td><strong>Control de Acceso</strong></td>
+        <td>RBAC Modular Granular</td>
+        <td>Permisos independientes por cada uno de los 11 módulos según el perfil asignado al usuario.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Enmascaramiento Dinámico en Pantalla (Data Masking)</h3>
+  <p>
+    Los operadores solo visualizan versiones anonimizadas de los datos confidenciales (ej. <code>C*** D*** O***</code>, <code>+52 ••• ••• 4629</code>). Solo los usuarios con el permiso <code>security</code> o rol <code>SuperAdmin</code> pueden presionar el botón de "Revelar PII", acción que queda inmediatamente asentada en la bitácora de auditoría inmutable.
+  </p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 3: LOS 11 MÓDULOS DE ORDERSYNC (PARTE 1) -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 3</span>
+    <h2>Los 11 Módulos del Sistema (Desglose Exhaustivo)</h2>
+  </div>
+
+  <!-- MODULO 1 -->
+  <h3>1. Módulo: Dashboard Principal (Resumen Operativo & Órdenes)</h3>
+  <p>
+    Es el centro de control visual de la plataforma. Proporciona una vista en tiempo real del pulso operativo del negocio.
+  </p>
+  <ul>
+    <li><strong>Tarjetas de Rendimiento (KPIs en vivo):</strong> Ventas brutas del día, total de órdenes procesadas, latencia promedio de sincronización (en milisegundos) y alertas de inventario crítico.</li>
+    <li><strong>Monitor de Pedidos Omnicanal:</strong> Tabla interactiva que consolida las compras de Shopify, Amazon y Mercado Libre con estatus visual (<code>Pagada</code>, <code>En Proceso</code>, <code>Enviada</code>, <code>Reembolsada</code>).</li>
+    <li><strong>Acciones Rápidas por Pedido:</strong>
+      <ul>
+        <li><strong>Inspección de Cliente:</strong> Muestra el detalle del pedido, items comprados y desglose de impuestos.</li>
+        <li><strong>Botón Devolución / RMA:</strong> Abre directamente el formulario de devolución precargando el pedido, el cliente y el SKU para agilizar reclamos.</li>
+      </ul>
+    </li>
+    <li><strong>Indicador de Sincronización Socket.io:</strong> Semáforo en la barra superior que notifica si la conexión WebSocket con el servidor está activa, sincronizando o reconectando.</li>
+  </ul>
+
+  <!-- MODULO 2 -->
+  <h3>2. Módulo: Métricas y Analítica Avanzada (Metrics)</h3>
+  <p>
+    Diseñado para la toma de decisiones financieras y comerciales con analítica gráfica de alto impacto.
+  </p>
+  <ul>
+    <li><strong>Desglose de Ingresos por Canal:</strong> Gráfico de distribución de facturación comparando qué canal aporta mayor rentabilidad.</li>
+    <li><strong>Velocidad de Sincronización (Throughput):</strong> Curvas de latencia percentil P95 y P99 para evaluar el rendimiento de las APIs de las plataformas.</li>
+    <li><strong>AOV (Average Order Value):</strong> Ticket promedio de compra segmentado por origen geográfico y canal.</li>
+    <li><strong>Tasa de Cumplimiento (Fulfillment Rate):</strong> Porcentaje de pedidos despachados en tiempo versus aquellos con demoras logísticas.</li>
+  </ul>
+
+  <!-- MODULO 3 -->
+  <h3>3. Módulo: Canales Omnicanal e Integraciones (Channels)</h3>
+  <p>
+    Gestiona los conectores con los diferentes marketplaces y plataformas de comercio electrónico.
+  </p>
+  <ul>
+    <li><strong>Conector Shopify:</strong> Integra REST Admin API y GraphQL. Maneja tokens de acceso seguros, dominio de la tienda (<code>.myshopify.com</code>) y sincronización de catálogo.</li>
+    <li><strong>Conector Amazon Seller Central:</strong> Soporte para SP-API con sincronización de inventario FBM/FBA.</li>
+    <li><strong>Conector Mercado Libre:</strong> Conexión OAuth 2.0 y mapeo automático de publicaciones.</li>
+    <li><strong>Configuración de Webhooks HMAC:</strong> Genera y valida las firmas secretas para recibir eventos de creación de pedidos y reembolsos automáticamente sin saturar la API con polling continuo.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 3: LOS 11 MÓDULOS DE ORDERSYNC (PARTE 2) -->
+<div>
+  <!-- MODULO 4 -->
+  <h3>4. Módulo: Control de Inventario Centralizado (Inventory)</h3>
+  <p>
+    Catálogo unificado maestro que previene las sobreventas y mantiene la paridad de stock entre todos los canales.
+  </p>
+  <ul>
+    <li><strong>Catálogo Maestro por SKU:</strong> Fotografía del producto, título, SKU único, categoría, costo de adquisición y precio de venta.</li>
+    <li><strong>Niveles de Stock Inteligente:</strong> Stock físico en bodega vs. stock reservado en órdenes pendientes vs. stock disponible para venta inmediata.</li>
+    <li><strong>Alertas de Reorden:</strong> Detección automática de productos que han alcanzado su umbral mínimo de seguridad.</li>
+    <li><strong>Edición Directa y Sincronización Forzada:</strong> Permite ajustar manualmente el inventario y disparar la actualización instantánea a Shopify con un solo clic.</li>
+  </ul>
+
+  <!-- MODULO 5 -->
+  <h3>5. Módulo: Gestión de Proveedores y Compras (Suppliers)</h3>
+  <p>
+    Administra la cadena de suministro inicial y el abastecimiento de mercancía a los almacenes.
+  </p>
+  <ul>
+    <li><strong>Directorio de Proveedores:</strong> Registro de fabricantes y mayoristas con términos de pago, lead time (tiempo de entrega) y contactos.</li>
+    <li><strong>Órdenes de Compra (Purchase Orders - PO):</strong> Generación y seguimiento de órdenes de compra emitidas a los proveedores.</li>
+    <li><strong>Recepción de Mercancía:</strong> Al marcar una orden de compra como "Recibida", el sistema suma automáticamente las unidades al stock maestro del inventario sin intervención manual.</li>
+  </ul>
+
+  <!-- MODULO 6 -->
+  <h3>6. Módulo: Clientes y Directorio CRM (Customers)</h3>
+  <p>
+    Visión 360 grados del comprador a través de todos los canales de venta.
+  </p>
+  <ul>
+    <li><strong>Identidad Unificada del Cliente:</strong> Consolida las compras de una misma persona aunque compre por Shopify un día y por Amazon al día siguiente.</li>
+    <li><strong>Cálculo de LTV (Customer Lifetime Value):</strong> Muestra el gasto total acumulado y la frecuencia de compra de cada cliente.</li>
+    <li><strong>Protección Criptográfica en Visualización:</strong> Datos protegidos por el motor de cifrado; incluye opción para exportar reportes bajo requerimientos de derecho al olvido GDPR.</li>
+  </ul>
+
+  <!-- MODULO 7 -->
+  <h3>7. Módulo: Usuarios, Roles y Accesos RBAC (Users)</h3>
+  <p>
+    Control estricto de quién tiene acceso a cada funcionalidad del software.
+  </p>
+  <ul>
+    <li><strong>Roles Predefinidos y Personalizados:</strong>
+      <ul>
+        <li><span class="badge badge-purple">SuperAdmin</span>: Acceso total al sistema, seguridad, devops y configuración.</li>
+        <li><span class="badge badge-blue">Admin</span>: Gestión operativa completa sin acceso a infraestructura crítica.</li>
+        <li><span class="badge badge-green">Operator</span>: Acceso exclusivo a pedidos, inventario, logística y devoluciones.</li>
+        <li><span class="badge badge-amber">Auditor</span>: Solo lectura en reportes, métricas y bitácoras de seguridad.</li>
+      </ul>
+    </li>
+    <li><strong>Matriz de Permisos por Módulo:</strong> Capacidad de activar o desactivar módulos específicos para cualquier rol o usuario individual.</li>
+    <li><strong>Políticas de Seguridad:</strong> Expiración forzada de contraseñas, longitud mínima y bloqueo por reintentos fallidos.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 3: LOS 11 MÓDULOS DE ORDERSYNC (PARTE 3) -->
+<div>
+  <!-- MODULO 8 -->
+  <h3>8. Módulo: Seguridad y Cumplimiento (Security)</h3>
+  <p>
+    Consola de gobernanza de datos, criptografía y monitoreo de amenazas.
+  </p>
+  <ul>
+    <li><strong>Monitor de Cifrado AES-256:</strong> Visualizador de registros cifrados en la base de datos con verificación de integridad de clave.</li>
+    <li><strong>Rotación de Claves (KMS):</strong> Herramienta para recifrar la base de datos con una nueva clave maestra sin detener la operación.</li>
+    <li><strong>Bitácora de Auditoría Forense:</strong> Registro que guarda: Usuario + Dirección IP + Acción + Módulo + Timestamp exacto.</li>
+    <li><strong>Gestión de MFA:</strong> Estado de enrolamiento del segundo factor de autenticación para cada colaborador.</li>
+  </ul>
+
+  <!-- MODULO 9 -->
+  <h3>9. Módulo: Logística y Rastreo de Envíos (Logistics)</h3>
+  <p>
+    Control integral del despacho, mensajería y entrega de última milla.
+  </p>
+  <ul>
+    <li><strong>Integración con Couriers:</strong> Generación y validación de números de guía de DHL Express, FedEx, Estafeta y UPS.</li>
+    <li><strong>Timeline de Checkpoints Interactivo:</strong> Muestra el progreso del paquete: <em>Orden Recibida ➔ En Preparación ➔ En Tránsito ➔ En Aduana ➔ En Reparto ➔ Entregado</em>.</li>
+    <li><strong>Detección de Incidencias:</strong> Alertas visuales inmediatas cuando un paquete presenta intento fallido de entrega o retraso en aduana.</li>
+    <li><strong>Cálculo de Tiempos de Tránsito:</strong> Estimación algorítmica de la fecha de entrega según el código postal del destinatario.</li>
+  </ul>
+
+  <!-- MODULO 10 -->
+  <h3>10. Módulo: Devoluciones y Reembolsos (Returns & Refunds / RMA)</h3>
+  <p>
+    Gestión operativa del retorno de productos, reingreso a inventario y satisfacción al cliente.
+  </p>
+  <ul>
+    <li><strong>Ciclo de Estados RMA:</strong>
+      <ol>
+        <li><span class="badge badge-amber">requested</span>: Solicitud registrada por el cliente o soporte técnico con motivo justificado.</li>
+        <li><span class="badge badge-blue">approved</span>: Devolución aprobada; se genera la guía de retorno para el cliente.</li>
+        <li><span class="badge badge-green">received_restocked</span>: El paquete llegó a bodega, pasó inspección de calidad y <strong>se reingresó automáticamente el stock al inventario</strong>.</li>
+        <li><span class="badge badge-slate">rejected</span>: Devolución denegada por no cumplir las políticas de garantía.</li>
+      </ol>
+    </li>
+    <li><strong>Sincronización con Órdenes:</strong> Al procesar la recepción con restock, la orden en el sistema pasa automáticamente a estado <code>refunded</code> (reembolsada).</li>
+    <li><strong>Soporte para Webhooks de Reembolsos de Shopify:</strong> Si el comerciante emite un reembolso directamente desde el panel de Shopify, OrderSync lo detecta vía webhook, registra el RMA y actualiza la orden de inmediato.</li>
+    <li><strong>Herramientas de Demostración:</strong> Botones incorporados para simular webhooks de Shopify y regenerar casos de prueba (Seed Demo).</li>
+  </ul>
+
+  <!-- MODULO 11 -->
+  <h3>11. Módulo: DevOps, Monitoreo y Salud del Sistema (DevOps)</h3>
+  <p>
+    Centro de supervisión técnica de infraestructura, contenedores y microservicios.
+  </p>
+  <ul>
+    <li><strong>Métricas de Hardware en Vivo:</strong> Indicadores porcentuales de uso de CPU, memoria RAM, lectura/escritura de disco y uptime del servidor.</li>
+    <li><strong>Estado de Contenedores Docker:</strong> Estado de salud (<em>Healthy / Running</em>) de las instancias de Node.js, frontend Angular y base de datos Neon.</li>
+    <li><strong>Tuberías CI/CD:</strong> Visualización de compilaciones, ejecuciones de suites de pruebas unitarias y versiones en despliegue.</li>
+    <li><strong>Consola de Logs en Tiempo Real:</strong> Transmisión por WebSockets de los logs del backend con filtrado por niveles (<code>INFO</code>, <code>WARN</code>, <code>ERROR</code>, <code>FATAL</code>).</li>
+    <li><strong>Acciones de Recuperación Rápida:</strong> Botones para limpiar memoria caché y reiniciar microservicios en caso de contingencia.</li>
+  </ul>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 4: CASOS DE USO Y FLUJOS E2E -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 4</span>
+    <h2>Flujo Operativo Extremo a Extremo (Paso a Paso)</h2>
+  </div>
+
+  <h3>Flujo 1: Ingreso de Pedido y Despacho Logístico</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Paso</th>
+        <th style="width: 25%;">Evento / Acción</th>
+        <th style="width: 35%;">Respuesta de OrderSync</th>
+        <th style="width: 30%;">Impacto en Datos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Cliente compra en Shopify</td>
+        <td>Shopify dispara Webhook <code>orders/create</code> con firma HMAC.</td>
+        <td>Orden recibida en backend.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Validación Criptográfica</td>
+        <td>El backend valida la firma HMAC del webhook para evitar fraudes.</td>
+        <td>Verificación aprobada.</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Cifrado & Deducción</td>
+        <td>Se cifra el nombre y dirección del cliente con AES-256. Se descuenta el stock en el inventario.</td>
+        <td><code>stock = stock - 1</code> en DB.</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Emisión en Vivo</td>
+        <td>El servidor emite <code>ORDER_CREATED</code> e <code>INVENTORY_UPDATED</code> por Socket.io.</td>
+        <td>Aparece en pantalla en < 150ms.</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Despacho Logístico</td>
+        <td>Operador asigna guía en el módulo de Logística (ej. DHL).</td>
+        <td>Se inicia el tracking en vivo.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Flujo 2: Gestión de Devolución, Reingreso y Reembolso</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Paso</th>
+        <th style="width: 25%;">Operador / Sistema</th>
+        <th style="width: 35%;">Acción en la Plataforma</th>
+        <th style="width: 30%;">Efecto en el Negocio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Cliente solicita cambio</td>
+        <td>En el Dashboard se pulsa <strong>Devolución / RMA</strong> en la orden.</td>
+        <td>Se crea registro con status <code>requested</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Aprobación</td>
+        <td>El supervisor hace clic en <strong>Aprobar RMA</strong>.</td>
+        <td>Se emite guía de recolección al cliente.</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Llegada a Bodega</td>
+        <td>El bodeguero hace clic en <strong>Recibir e Ingresar a Stock</strong>.</td>
+        <td>El stock sube: <code>stock = stock + 1</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Cierre de Orden</td>
+        <td>El sistema actualiza la orden asociada a status <code>refunded</code>.</td>
+        <td>Badge verde en la tabla de pedidos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <strong>Auditoría Completa:</strong> Ambas operaciones quedan registradas en el <strong>Audit Log</strong>, indicando qué usuario realizó el movimiento y qué cambios de stock se produjeron en la base de datos Neon.
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- CAPÍTULO 5: GUÍA RÁPIDA DE ACCESO Y CREDENCIALES -->
+<div>
+  <div class="section-header">
+    <span class="section-tag">Capítulo 5</span>
+    <h2>Guía Rápida de Acceso y Credenciales de Operación</h2>
+  </div>
+
+  <h3>Accesos al Sistema</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th>Servicio</th>
+        <th>URL Local</th>
+        <th>Tecnología</th>
+        <th>Propósito</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Frontend Web</strong></td>
+        <td><code>http://localhost:4200</code></td>
+        <td>Angular 17 Standalone</td>
+        <td>Interfaz visual de usuario y administración.</td>
+      </tr>
+      <tr>
+        <td><strong>API Backend</strong></td>
+        <td><code>http://localhost:3000</code></td>
+        <td>Node.js Express TypeScript</td>
+        <td>Lógica de negocio, cifrado y conexiones de base de datos.</td>
+      </tr>
+      <tr>
+        <td><strong>WebSockets</strong></td>
+        <td><code>ws://localhost:3000</code></td>
+        <td>Socket.io Server</td>
+        <td>Transmisión en tiempo real de órdenes, stock y logs.</td>
+      </tr>
+      <tr>
+        <td><strong>Base de Datos</strong></td>
+        <td><code>ep-billowing-fire-a4rfxljl.us-east-1.aws.neon.tech</code></td>
+        <td>PostgreSQL Neon Serverless</td>
+        <td>Almacén relacional con SSL forzado y cifrado AES-256.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cuentas de Acceso Preconfiguradas</h3>
+  <table style="font-size: 8.5pt;">
+    <thead>
+      <tr>
+        <th>Usuario / Email</th>
+        <th>Contraseña</th>
+        <th>Rol Asignado</th>
+        <th>Módulos Permitidos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>admin@ordersync.io</code></td>
+        <td><code>AdminPass123!</code></td>
+        <td><span class="badge badge-purple">SuperAdmin</span></td>
+        <td><strong>Todos los 11 módulos</strong> (Total accesibilidad y control).</td>
+      </tr>
+      <tr>
+        <td><code>operator@ordersync.io</code></td>
+        <td><code>Operator123!</code></td>
+        <td><span class="badge badge-green">Operator</span></td>
+        <td>Dashboard, Inventario, Logística y Devoluciones.</td>
+      </tr>
+      <tr>
+        <td><code>auditor@ordersync.io</code></td>
+        <td><code>Auditor123!</code></td>
+        <td><span class="badge badge-amber">Auditor</span></td>
+        <td>Métricas, Seguridad y Bitácoras de Auditoría.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Soporte Multilingüe</h3>
+  <p>
+    La aplicación cuenta con internacionalización reactiva completa (<strong>Español</strong> e <strong>Inglés</strong>). Puede conmutarse el idioma en cualquier momento desde la barra superior de la aplicación mediante el selector de bandera sin necesidad de recargar la página.
+  </p>
+
+  <div style="margin-top: 2.5rem; padding: 1.2rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; text-align: center;">
+    <div style="font-weight: 700; color: #0f172a; font-size: 11pt; margin-bottom: 4px;">OrderSync Enterprise v2.4</div>
+    <div style="font-size: 8.5pt; color: #64748b;">
+      Documento generado automáticamente para el equipo de operaciones e ingeniería.<br>
+      Todos los derechos reservados © 2026 OrderSync Inc. Confidencial y de uso interno.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

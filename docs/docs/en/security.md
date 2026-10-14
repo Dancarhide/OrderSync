@@ -5,123 +5,136 @@ title: Security & Compliance
 
 # OrderSync — Security & Compliance
 
-**Document Version:** 1.0.0  
+**Document Version:** 2.0.0  
 **Classification:** Confidential  
-**Last Updated:** September 2026  
-**Compliance Standards:** ISO 27001:2022 | CCPA | U.S. Privacy Framework
+**Last Updated:** October 2026  
+**Primary Jurisdiction:** State of Texas, USA (Houston Headquarters)  
+**Compliance Standards:** TDPSA | Texas Bus. & Com. Code Ch. 521 | ISO/IEC 27001:2022 | CCPA | FTC Safeguards
 
 ---
 
 ## 1. Overview
 
-OrderSync is designed from the ground up with a **security-first** architecture. All components adhere to the **ISO/IEC 27001:2022** Information Security Management System (ISMS) standard, as well as applicable U.S. privacy laws including the **California Consumer Privacy Act (CCPA)** and general U.S. Federal Trade Commission (FTC) data protection guidelines.
+OrderSync is engineered from the ground up with a **security-by-design** architecture. With primary headquarters in **Houston, Texas**, the platform strictly complies with:
 
-This document describes the technical and procedural controls implemented to protect the confidentiality, integrity, and availability of all data processed by the OrderSync platform.
+1. **TDPSA (Texas Data Privacy and Security Act)** — Effective July 1, 2024 (*Texas Business and Commerce Code § 541*).
+2. **Texas Identity Theft Enforcement and Protection Act** (*Texas Business and Commerce Code Chapter 521*).
+3. **ISO/IEC 27001:2022** — Information Security Management System (ISMS).
+4. **Federal Trade Commission (FTC)** Safeguards Rule and interstate equivalents (e.g., California CCPA).
 
 ---
 
 ## 2. Data Classification
 
-| Data Category | Examples | Classification | Protection Level |
-|---|---|---|---|
-| Customer PII | Full name, address, phone number | **Confidential** | AES-256-GCM Encrypted |
-| Order Metadata | Order ID, channel, status, amount | **Internal** | Standard DB Access Controls |
-| System Secrets | Encryption keys, DB credentials | **Restricted** | Environment Variables Only |
-| Webhook Payloads | Raw Shopify/Amazon POST bodies | **Internal** | HMAC-Verified, Transient |
+| Data Category | Examples | Classification | Protection Level | Legal Basis |
+|---|---|---|---|---|
+| **Consumer PII** | Full name, delivery address, phone | **Confidential** | Column-level AES-256-GCM + Random IV | TDPSA § 541.101 & Tex. Sec. 521.052 |
+| **Financial Records** | Order total, currency, tax, payment status | **Internal** | ACID transaction integrity in Neon PostgreSQL | 7-Year Tax Retention (IRS & Texas Comptroller) |
+| **Cryptographic Secrets** | 256-bit AES master key, JWT secret | **Restricted** | KMS / Environment secrets / Rotation audit | ISO 27001 Control A.8.24 |
+| **Credentials & MFA** | Password hashes, TOTP Base32 secrets | **Restricted** | `crypt()` Blowfish (`bf`) / RFC 6238 TOTP | FTC Safeguards & Texas MFA Guidelines |
+| **Webhook Payloads** | Shopify & Amazon raw payloads | **Internal** | HMAC-SHA256 signature verification | Replay Attack Prevention (Idempotency) |
 
 ---
 
-## 3. Encryption
+## 3. Encryption & Key Management (KMS)
 
 ### 3.1 Data at Rest — Column-Level Encryption (AES-256-GCM)
 
-All Personally Identifiable Information (PII) is encrypted **at the application layer** before being stored in the database. The PostgreSQL `pgcrypto` extension is enabled as an additional security layer. The encryption algorithm is **AES-256-GCM** (Advanced Encryption Standard with Galois/Counter Mode), which provides both confidentiality and data integrity authentication.
-
-**Encrypted Fields (`customers` table):**
-
-| Column | Data Type | Protection |
-|---|---|---|
-| `encrypted_full_name` | `BYTEA` | AES-256-GCM |
-| `encrypted_shipping_address` | `BYTEA` | AES-256-GCM |
-| `encrypted_phone` | `BYTEA` | AES-256-GCM |
-
-Each encrypted value is stored as a binary buffer containing:
-```
-[IV: 16 bytes] + [Auth Tag: 16 bytes] + [Ciphertext]
-```
-
-The **Initialization Vector (IV)** is randomly generated for every encryption operation, ensuring that identical plaintext values produce different ciphertexts.
-
-### 3.2 Data in Transit — TLS
-
-All communication between system components uses **Transport Layer Security (TLS)**:
-- Webhook ingestion endpoints: HTTPS only.
-- Database connections: TLS-encrypted PostgreSQL connections.
-- WebSocket connections: WSS (WebSocket Secure) in production deployments.
-
----
-
-## 4. Secrets Management
-
-> [!IMPORTANT]
-> **Zero hardcoded credentials policy.** No passwords, API keys, encryption keys, or database connection strings appear anywhere in the source code or version control history.
-
-All secrets are injected at runtime via **environment variables**:
-
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `ENCRYPTION_KEY` | 256-bit AES key (hex-encoded, 64 chars) |
-| `WEBHOOK_SECRET` | HMAC-SHA256 shared secret for webhook validation |
-| `NODE_ENV` | Application environment (`development` / `production`) |
-
-In production, these variables must be managed via a dedicated secrets manager (e.g., **AWS Secrets Manager**, **HashiCorp Vault**, or **Azure Key Vault**).
-
----
-
-## 5. Webhook Security
-
-### 5.1 HMAC-SHA256 Signature Verification
-
-Every incoming webhook request is authenticated before any processing occurs. The backend computes an HMAC-SHA256 digest of the raw request body using the shared `WEBHOOK_SECRET` and compares it against the `x-webhook-signature` header provided by the sender.
+All Personally Identifiable Information (PII) is encrypted at the application layer prior to database insertion:
 
 ```
-HMAC-SHA256(WEBHOOK_SECRET, raw_body) === x-webhook-signature
+Buffer: [IV: 16 bytes] + [Auth Tag: 16 bytes] + [Ciphertext]
 ```
 
-Requests with invalid or missing signatures are rejected with HTTP `401 Unauthorized`.
+* **Initialization Vector (IV):** 16 cryptographically random bytes generated per encryption call to prevent frequency analysis attacks.
+* **Authentication Tag:** 16 Galois/Counter Mode bytes ensuring tamper-proof integrity.
 
-### 5.2 Idempotency & Deduplication
+### 3.2 KMS Key Health & Audit Telemetry
 
-To prevent duplicate order records from replay attacks or network retries, all webhook endpoints enforce strict **idempotency** using the `external_order_id` as a natural deduplication key. If an order with that ID already exists in the database, the system returns HTTP `200 OK` without re-processing, and no duplicate record is created.
+The [`KeyManagementService`](file:///d:/Proyectos/OrderSync/backend/src/services/kms.service.ts) provides real-time cryptographic status:
 
----
-
-## 6. Access Control
-
-| Layer | Control Mechanism |
-|---|---|
-| Network | Docker network isolation between containers |
-| Database | Dedicated service account with least-privilege access |
-| API | HMAC signature per webhook source |
-| UI | PII obfuscation (masked display: `J*** S*** [Encrypted]`) |
+* **Endpoint:** `GET /api/security/key-status`
+  * Validates 256-bit key entropy and algorithm health.
+  * Generates masked SHA-256 fingerprint (`SHA256:...`) for traceability without secret exposure.
+  * Assesses ISO 27001 Control **A.8.24** (*Use of Cryptography*).
+* **Rotation Audit Endpoint:** `POST /api/security/rotate-keys`
+  * Audits key rotation schedules every 90 days.
 
 ---
 
-## 7. Audit Logging
+## 4. Texas Framework: Consumer Rights (TDPSA)
 
-The system records the following events for audit trail purposes, aligned with ISO 27001 Annex A control **A.8.15 (Logging)**:
-- Every incoming webhook request (timestamp, channel, order ID, HTTP status returned).
-- Every database write transaction (order creation, encryption success/failure).
-- All WebSocket connection and disconnection events.
+Under **Texas Business and Commerce Code § 541.051**, consumers possess enforceable data privacy rights. OrderSync supports automated **Data Subject Requests (DSR)**:
+
+### 4.1 Right to Erasure / Anonymization
+
+* **Endpoint:** `POST /api/customers/:id/anonymize`
+* **Action:** Replaces encrypted customer PII with irreversible anonymized placeholders (`ANONYMIZED_TDPSA_CONSUMER`, `REDACTED_PER_TEXAS_DATA_PRIVACY_ACT`, `000-000-0000`).
+* **Tax Exemption:** Conforme to TDPSA § 541.055, financial and accounting amounts remain intact disassociated from identity for Texas Comptroller compliance.
+* **Audit Trail:** Injects an immutable `TDPSA_RIGHT_TO_ERASURE` event into `security_audit_logs`.
+
+### 4.2 Right to Data Portability
+
+* **Endpoint:** `GET /api/customers/:id/export`
+* **Action:** Generates a structured, machine-readable JSON package containing:
+  * Official Texas legal framework metadata.
+  * Decrypted consumer profile for authorized delivery.
+  * Transaction history across connected channels.
+  * Digital signature and SHA-256 integrity checksum.
 
 ---
 
-## 8. Compliance Summary
+## 5. Texas Breach Notification Protocol (Sec. 521.053)
 
-| Standard | Status | Notes |
-|---|---|---|
-| **ISO 27001:2022** | Compliant | ISMS controls implemented: A.8.3, A.8.11, A.8.15, A.8.24 |
-| **CCPA** | Compliant | PII encrypted and access-controlled |
-| **FTC Data Protection Guidelines** | Compliant | No PII stored in plaintext |
-| **OWASP Top 10** | Mitigated | Injection, cryptographic failures, and security misconfiguration addressed |
+Under **Texas Business & Commerce Code § 521.053**:
+
+* **Notice Deadline:** Mandatory notification to affected individuals as quickly as practicable and no later than **60 calendar days** following discovery of a security breach involving sensitive PII.
+* **Attorney General Notice:** Mandatory notification to the **Texas Attorney General (OAG)** if a breach affects **500 or more Texas residents**.
+* **Responsible Party:** Handled via designated Data Protection Officer (`privacy-officer@ordersync.app`).
+
+---
+
+## 6. Server Hardening (Helmet & Rate Limiting)
+
+To mitigate OWASP Top 10 vulnerabilities and denial-of-service attempts:
+
+### 6.1 Helmet Security Headers
+* **HSTS:** Enforces HTTPS/TLS encrypted communication.
+* **X-Content-Type-Options:** Prevents MIME-type sniffing (`nosniff`).
+* **X-Frame-Options:** Prevents Clickjacking attacks (`SAMEORIGIN`).
+
+### 6.2 Rate Limiting
+* **Authentication Rate Limiting:**
+  * Endpoint: `/api/login`
+  * Threshold: Max 20 requests per IP per 15 minutes to defeat brute-force and credential stuffing attacks.
+* **Global API Limiting:**
+  * Endpoints: `/api/*`
+  * Threshold: 600 requests per IP per 15 minutes.
+
+---
+
+## 7. Multi-Factor Authentication (MFA / 2FA)
+
+Administrator accounts are secured with RFC 6238 Time-Based One-Time Password (**TOTP**) authentication:
+
+* **Algorithm:** HMAC-SHA1 with 30-second time steps and ±1 step drift tolerance.
+* **Key Format:** 160-bit Base32 secret compatible with standard authenticator applications.
+* **Endpoints:**
+  * `GET /api/auth/mfa/status`
+  * `POST /api/auth/mfa/setup`
+  * `POST /api/auth/mfa/verify`
+  * `POST /api/auth/mfa/disable`
+
+---
+
+## 8. Security Audit Trail
+
+All critical security operations are logged to the `security_audit_logs` table:
+
+* **ISO 27001 Control:** **A.8.15 (Logging)**.
+* **Events Recorded:**
+  * `TDPSA_RIGHT_TO_ERASURE`
+  * `TDPSA_DATA_PORTABILITY_EXPORT`
+  * `KMS_KEY_ROTATION_AUDITED`
+  * `MFA_ACTIVATED` / `MFA_DISABLED`
+* **Operator Console:** Real-time visibility under **Settings > Texas Security & TDPSA**.

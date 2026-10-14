@@ -6,7 +6,16 @@ import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { TranslationService, SupportedLanguage } from '../../services/translation.service';
 
-export type UserRole = 'Admin' | 'Operator';
+export type UserRole = string;
+
+export interface AppRole {
+  name: string;
+  description: string;
+  color?: string;
+  isSystem?: boolean;
+  allowedModules: ActiveModule[];
+}
+
 export type ActiveModule =
   | 'dashboard'
   | 'metrics'
@@ -73,6 +82,10 @@ interface InventoryItem {
   supplier_name?: string;
   unit_cost?: number;
   sale_price?: number;
+  image_url?: string;
+  shopify_product_id?: string;
+  channel?: string;
+  product_type?: string;
 }
 
 interface CustomerRecord {
@@ -218,6 +231,18 @@ export interface ExecutiveMetrics {
     webhookUptimePercent: number;
     requestsPerMinute: number;
   };
+  timeline?: Array<{
+    date: string;
+    shopify: number;
+    amazon: number;
+    total: number;
+    orders: number;
+  }>;
+  availableMonths?: Array<{
+    key: string;
+    name: string;
+  }>;
+  selectedMonth?: string;
 }
 
 interface Toast {
@@ -259,13 +284,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
   currentPage = 1;
   pageSize = 10;
 
-  // Module: Inventory Data
+  // Module: Inventory Data & Controls
   inventoryItems: InventoryItem[] = [];
   inventoryLoading = false;
+  inventoryViewMode: 'table' | 'cards' = 'table';
+  inventoryPageSize: number = 10;
+  inventoryCurrentPage: number = 1;
+  inventorySearch: string = '';
+  inventoryStockFilter: 'all' | 'low' | 'out' | 'in' = 'all';
+  inventoryTypeFilter: string = 'all';
+  productTypes: string[] = [
+    'Electronics',
+    'Audio & Headsets',
+    'Displays & Monitors',
+    'Accessories',
+    'Computers & Laptops',
+    'Gaming Gear',
+    'Office & Ergonomics'
+  ];
+  showCreateTypeModal: boolean = false;
+  newTypeName: string = '';
+  creatingType: boolean = false;
 
-  // Module: Customers Data
+  // Module: Customers Data & Filtering Controls
   customers: CustomerRecord[] = [];
   customersLoading = false;
+  customerSearch: string = '';
+  customerChannelFilter: string = 'all';
+  customerSortBy: 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'order' = 'newest';
+  customerPageSize: number = 10;
+  customerCurrentPage: number = 1;
   revealCustomerPii = true;
   selectedAuditCustomer: CustomerRecord | null = null;
 
@@ -341,39 +389,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly donutCircumference = 408.4;
   readonly slaCircumference = 339.29;
 
+  selectedMetricsMonth: string = 'all';
+  availableMetricsMonths: Array<{ key: string; name: string }> = [];
+
   get salesTrendData(): Array<{ date: string; shopify: number; amazon: number; total: number; orders: number }> {
-    const totalRev = this.metrics?.sales?.totalRevenue || 12450;
-    const shopifyRev = this.metrics?.sales?.shopifyRevenue || totalRev * 0.58;
-    const amazonRev = this.metrics?.sales?.amazonRevenue || totalRev * 0.42;
-    const totalOrders = this.metrics?.sales?.totalOrders || 48;
-
-    const isEs = this.translationService.currentLang === 'es';
-    const dayLabels = isEs 
-      ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-    const factors = [
-      { factor: 0.12, orderFactor: 0.11 },
-      { factor: 0.14, orderFactor: 0.13 },
-      { factor: 0.13, orderFactor: 0.15 },
-      { factor: 0.16, orderFactor: 0.14 },
-      { factor: 0.19, orderFactor: 0.20 },
-      { factor: 0.15, orderFactor: 0.16 },
-      { factor: 0.11, orderFactor: 0.11 }
-    ];
-
-    return dayLabels.map((label, i) => {
-      const d = factors[i];
-      const s = Math.round(shopifyRev * d.factor);
-      const a = Math.round(amazonRev * d.factor);
-      return {
-        date: label,
-        shopify: s,
-        amazon: a,
-        total: s + a,
-        orders: Math.max(1, Math.round(totalOrders * d.orderFactor))
-      };
-    });
+    if (this.metrics?.timeline && this.metrics.timeline.length > 0) {
+      return this.metrics.timeline;
+    }
+    return [];
   }
 
   get trendSvgWidth(): number { return 620; }
@@ -381,6 +404,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get trendPoints(): Array<{ x: number; yTotal: number; yShopify: number; yAmazon: number; item: any }> {
     const data = this.salesTrendData;
+    if (!data || data.length === 0) return [];
     const maxVal = Math.max(...data.map(d => this.selectedChartMetric === 'revenue' ? d.total : d.orders)) * 1.18 || 1000;
     const w = this.trendSvgWidth;
     const h = this.trendSvgHeight;
@@ -390,7 +414,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const usableH = h - padY * 2;
 
     return data.map((d, i) => {
-      const x = padX + (i / (data.length - 1)) * usableW;
+      const x = data.length === 1 ? padX + usableW / 2 : padX + (i / (data.length - 1)) * usableW;
       const valTotal = this.selectedChartMetric === 'revenue' ? d.total : d.orders;
       const valShopify = this.selectedChartMetric === 'revenue' ? d.shopify : Math.round(d.orders * 0.6);
       const valAmazon = this.selectedChartMetric === 'revenue' ? d.amazon : Math.round(d.orders * 0.4);
@@ -431,13 +455,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get donutShopifyPercent(): number {
-    const total = (this.metrics?.sales?.totalRevenue || 1);
-    const shopify = (this.metrics?.sales?.shopifyRevenue || 0);
-    return Math.round((shopify / (total || 1)) * 100) || 58;
+    const total = this.metrics?.sales?.totalRevenue || 0;
+    if (total <= 0) return 0;
+    const shopify = this.metrics?.sales?.shopifyRevenue || 0;
+    return Math.min(100, Math.max(0, Math.round((shopify / total) * 100)));
   }
 
   get donutAmazonPercent(): number {
-    return 100 - this.donutShopifyPercent;
+    const total = this.metrics?.sales?.totalRevenue || 0;
+    if (total <= 0) return 0;
+    const amazon = this.metrics?.sales?.amazonRevenue || 0;
+    return Math.min(100, Math.max(0, Math.round((amazon / total) * 100)));
   }
 
   get donutShopifyDash(): string {
@@ -539,6 +567,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   realShipments: RealShipment[] = [];
   shipmentsLoading = false;
   advancingShipmentId = '';
+  syncingShipmentId = '';
+  syncingWithShopify = false;
 
   // High-Volume Logistics Automation & Filtering
   autoDispatchActive = false;
@@ -621,27 +651,103 @@ export class DashboardComponent implements OnInit, OnDestroy {
   systemUptime = 0;
   serverStatus = 'Online (Healthy)';
   isSimulating = false;
+  devopsTelemetry: any = null;
+  devopsLogs: any[] = [];
+  devopsLogFilter: string = 'ALL';
+  devopsPingLoading = false;
+  devopsLoading = false;
+  devopsActiveSubTab: 'overview' | 'containers' | 'cicd' | 'logs' | 'metrics' = 'overview';
+  devopsPrometheusMetricsRaw = '';
 
   // User & RBAC
   currentUserEmail = 'admin@ordersync.app';
   currentRole: UserRole = (localStorage.getItem('ordersync_role') as UserRole) || 'Admin';
 
-  // Module: User Management (Admin-only creation)
+  // Module: User Management (Admin-only creation & RBAC administration)
   systemUsers: any[] = [];
   usersLoading = false;
+  creatingUser = false;
+  showCreateUserModal = false;
   newEmail = '';
   newPassword = '';
   newRole: UserRole = 'Operator';
   userCreationError = '';
+  showNewPassword = false;
 
-  // Module: Inventory Product Creation
+  // User Search, Filtering & Sorting
+  userSearch = '';
+  userRoleFilter: 'all' | 'Admin' | 'Operator' = 'all';
+  userSortBy: 'newest' | 'oldest' | 'email-asc' = 'newest';
+
+  // Edit / Password Reset Modal
+  showResetPasswordModal = false;
+  resetPasswordUser: any = null;
+  resetNewPassword = '';
+  resetPasswordError = '';
+  savingNewPassword = false;
+  showResetNewPassword = false;
+
+  // Delete User Modal
+  showDeleteUserModal = false;
+  deletingUser: any = null;
+  deletingUserLoading = false;
+
+  // Dynamic Roles & Permissions Definition
+  allNavModules: Array<{ key: ActiveModule; label: string; category: string; description: string }> = [
+    { key: 'dashboard', label: 'Dashboard Overview', category: 'Core Platform', description: 'Real-time KPIs, channel breakdown and order stream' },
+    { key: 'metrics', label: 'Business Metrics & BI', category: 'Core Platform', description: 'Executive sales analytics, financial margins and SLA' },
+    { key: 'channels', label: 'Sales Channels (APIs)', category: 'Core Platform', description: 'Live connectivity for Shopify and Amazon SP-API' },
+    { key: 'inventory', label: 'Inventory & Stock', category: 'Core Platform', description: 'Product catalog, real-time stock and sync engine' },
+    { key: 'suppliers', label: 'Suppliers & Procurement', category: 'Core Platform', description: 'Supply chain partners and restock purchase orders' },
+    { key: 'customers', label: 'Customer Directory', category: 'Core Platform', description: 'Centralized directory of client accounts and addresses' },
+    { key: 'users', label: 'User Management', category: 'Core Platform', description: 'RBAC user accounts and navigation access control' },
+    { key: 'logistics', label: 'Logistics & Route Tracking', category: 'Operations', description: 'Multi-carrier shipment tracking and live phases' },
+    { key: 'returns', label: 'Returns & Refunds (RMA)', category: 'Operations', description: 'RMA returns workflow and inventory restock' },
+    { key: 'devops', label: 'DevOps & Monitoring', category: 'Operations', description: 'System health, telemetry and database connection' }
+  ];
+
+  roles: AppRole[] = [
+    {
+      name: 'Admin',
+      description: 'Full master access and control across the entire platform',
+      color: 'purple',
+      isSystem: true,
+      allowedModules: ['dashboard', 'metrics', 'channels', 'inventory', 'suppliers', 'customers', 'users', 'logistics', 'returns', 'devops']
+    },
+    {
+      name: 'Operator',
+      description: 'Standard day-to-day operations for orders, inventory and logistics',
+      color: 'blue',
+      isSystem: true,
+      allowedModules: ['dashboard', 'channels', 'inventory', 'logistics', 'returns']
+    }
+  ];
+
+  // Role Management Modal State
+  showRoleModal = false;
+  showManageRolesModal = false;
+  editingRoleName = '';
+  roleFormName = '';
+  roleFormDesc = '';
+  roleFormColor = 'purple';
+  roleFormModules: Record<string, boolean> = {};
+  roleFormError = '';
+
+  // Module: Inventory Product Creation & Multi-channel Sync Modal
   showProductForm = false;
+  showRegisterProductModal = false;
+  newProdChannel: 'Shopify' | 'Amazon' = 'Shopify';
   newProdSku = '';
   newProdName = '';
-  newProdStock = 40;
+  newProdStock = 25;
   newProdSupplier = 'Apex Global Electronics';
-  newProdCost = 50.00;
-  newProdPrice = 119.99;
+  newProdCost = 35.00;
+  newProdPrice = 79.99;
+  newProdImageUrl = '';
+  newProdImagePreview = '';
+  newProdDescription = '';
+  newProdType = 'Electronics';
+  publishingProduct = false;
 
   constructor(
     private http: HttpClient,
@@ -681,12 +787,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadInventory();
     this.loadCustomers();
     this.loadUsers();
+    this.loadRoles();
     this.loadMetrics();
     this.loadSuppliers();
     this.loadPurchaseOrders();
     this.loadShipments();
     this.loadReturns();
     this.loadHealth();
+    this.loadShopifyStatus();
+    this.loadProductTypes();
 
     this.http.get<any>('http://localhost:3000/api/shipments/auto-engine/status').subscribe({
       next: (res) => { this.autoDispatchActive = !!res.active; }
@@ -755,7 +864,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.socket.on('RETURN_CREATED', (newRet: ReturnRecord) => {
       this.returns.unshift(newRet);
       this.loadMetrics();
-      this.showToast(`Nueva Solicitud de Devolución ${newRet.return_number} registrada (${newRet.channel})`);
+      this.showToast(`New Return Request ${newRet.return_number} registered (${newRet.channel})`);
     });
 
     this.socket.on('RETURN_UPDATED', (upRet: ReturnRecord) => {
@@ -835,19 +944,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
           }
         }
         if (res.restocked) {
-          this.showToast(`Producto reingresado a inventario: +${ret.quantity} unidades para ${ret.sku}`);
+          this.showToast(`Product restocked into inventory: +${ret.quantity} units for ${ret.sku}`);
           this.loadInventory();
         } else if (action === 'approve') {
-          this.showToast(`Devolución ${ret.return_number} aprobada. Guía en tránsito hacia almacén.`);
+          this.showToast(`Return ${ret.return_number} approved. Return label in transit to warehouse.`);
         } else if (action === 'decline') {
-          this.showToast(`Devolución ${ret.return_number} rechazada.`);
+          this.showToast(`Return ${ret.return_number} rejected.`);
         }
         this.loadMetrics();
       },
       error: (err) => {
         this.processingReturnId = null;
         console.error('Error processing return:', err);
-        this.showToast('Error al procesar la devolución.');
+        this.showToast('Error processing return.');
       }
     });
   }
@@ -942,7 +1051,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.http.post('http://localhost:3000/api/simulate/shopify-refund', payload).subscribe({
       next: (res: any) => {
         this.isSimulating = false;
-        this.showToast(`Devolución Shopify procesada vía Webhook: ${res.return?.return_number}`);
+        this.showToast(`Shopify Return processed via Webhook: ${res.return?.return_number}`);
         this.loadReturns();
         this.loadInventory();
         this.loadInitialOrders();
@@ -950,14 +1059,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.isSimulating = false;
         console.error('Error simulating Shopify refund:', err);
-        this.showToast('Error al simular devolución Shopify');
+        this.showToast('Error simulating Shopify return');
       }
     });
   }
 
   submitNewReturn() {
     if (!this.newReturnOrderId || !this.newReturnSku || !this.newReturnCustomer) {
-      alert('Por favor complete los campos obligatorios');
+      alert('Please fill in required fields');
       return;
     }
 
@@ -978,22 +1087,67 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.http.post<ReturnRecord>('http://localhost:3000/api/returns', payload).subscribe({
       next: (created) => {
         this.closeReturnModal();
-        this.showToast(`Devolución ${created.return_number} registrada formalmente.`);
+        this.showToast(`Return ${created.return_number} officially created.`);
         this.loadReturns();
         this.loadMetrics();
       },
       error: (err) => {
         console.error('Error creating return:', err);
-        alert('Error al registrar la devolución.');
+        alert('Error recording return.');
       }
     });
   }
 
-  loadMetrics() {
+  seedDemoReturns() {
+    this.returnsLoading = true;
+    this.http.post<any>('http://localhost:3000/api/returns/seed', {}).subscribe({
+      next: (res) => {
+        this.returns = res.returns || [];
+        this.returnsLoading = false;
+        this.showToast('Devoluciones de prueba generadas exitosamente.');
+        this.loadMetrics();
+        this.loadInventory();
+      },
+      error: (err) => {
+        this.returnsLoading = false;
+        console.error('Error seeding returns:', err);
+        this.showToast('Error al cargar datos de prueba.');
+      }
+    });
+  }
+
+  deleteReturn(id: string) {
+    if (!confirm('¿Eliminar este registro de devolución?')) return;
+    this.http.delete(`http://localhost:3000/api/returns/${id}`).subscribe({
+      next: () => {
+        this.returns = this.returns.filter(r => r.id !== id);
+        this.showToast('Registro de devolución eliminado.');
+        this.loadMetrics();
+      },
+      error: (err) => {
+        console.error('Error deleting return:', err);
+        this.showToast('Error al eliminar la devolución.');
+      }
+    });
+  }
+
+  loadMetrics(month?: string) {
+    if (month !== undefined) {
+      this.selectedMetricsMonth = month;
+    }
     this.metricsLoading = true;
-    this.http.get<ExecutiveMetrics>('http://localhost:3000/api/metrics').subscribe({
+    const query = this.selectedMetricsMonth && this.selectedMetricsMonth !== 'all'
+      ? `?month=${encodeURIComponent(this.selectedMetricsMonth)}`
+      : '';
+    this.http.get<ExecutiveMetrics>(`http://localhost:3000/api/metrics${query}`).subscribe({
       next: (data) => {
         this.metrics = data;
+        if (data.availableMonths && data.availableMonths.length > 0) {
+          this.availableMetricsMonths = data.availableMonths;
+        }
+        if (data.selectedMonth) {
+          this.selectedMetricsMonth = data.selectedMonth;
+        }
         this.metricsLoading = false;
       },
       error: (err) => {
@@ -1001,6 +1155,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.metricsLoading = false;
       }
     });
+  }
+
+  onMetricsMonthChange() {
+    this.loadMetrics(this.selectedMetricsMonth);
   }
 
   loadSuppliers() {
@@ -1035,7 +1193,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.advancingShipmentId = shipment.id;
     this.http.post<any>(`http://localhost:3000/api/shipments/${shipment.id}/advance`, {}).subscribe({
       next: (res) => {
-        this.showToast(res.message || 'Ruta actualizada con éxito');
+        this.showToast(res.message || 'Route updated successfully');
         this.advancingShipmentId = '';
         if (res.shipment) {
           const idx = this.realShipments.findIndex(s => s.id === res.shipment.id);
@@ -1051,7 +1209,49 @@ export class DashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error advancing shipment:', err);
         this.advancingShipmentId = '';
-        this.showToast('Error al actualizar la ruta del paquete');
+        this.showToast('Error updating package route');
+      }
+    });
+  }
+
+  syncShipmentWithShopify(shipment: RealShipment) {
+    this.syncingShipmentId = shipment.id;
+    this.http.post<any>(`http://localhost:3000/api/shipments/${shipment.id}/sync-shopify`, {}).subscribe({
+      next: (res) => {
+        this.syncingShipmentId = '';
+        this.showToast(res.message || 'Synced with Shopify API');
+        if (res.shipment) {
+          const idx = this.realShipments.findIndex(s => s.id === res.shipment.id);
+          if (idx !== -1) {
+            this.realShipments[idx] = res.shipment;
+          }
+          if (this.selectedTrackingShipment && this.selectedTrackingShipment.id === res.shipment.id) {
+            this.selectedTrackingShipment = res.shipment;
+          }
+        }
+        this.loadMetrics();
+      },
+      error: (err) => {
+        console.error('Error syncing with Shopify API:', err);
+        this.syncingShipmentId = '';
+        this.showToast('Error syncing with Shopify API');
+      }
+    });
+  }
+
+  syncAllWithShopify() {
+    this.syncingWithShopify = true;
+    this.http.post<any>('http://localhost:3000/api/shipments/sync-shopify-all', {}).subscribe({
+      next: (res) => {
+        this.syncingWithShopify = false;
+        this.showToast(res.message || 'Shipments synced with Shopify API');
+        this.loadShipments();
+        this.loadMetrics();
+      },
+      error: (err) => {
+        console.error('Error in syncAllWithShopify:', err);
+        this.syncingWithShopify = false;
+        this.showToast('Error syncing batch with Shopify API');
       }
     });
   }
@@ -1062,7 +1262,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.autoDispatchActive = res.active;
         this.showToast(res.message);
       },
-      error: () => this.showToast('Error al alternar motor de despacho')
+      error: () => this.showToast('Error toggling auto-dispatch engine')
     });
   }
 
@@ -1077,7 +1277,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.bulkDispatching = false;
-        this.showToast('Error en sincronización masiva de transportistas');
+        this.showToast('Error in carrier batch synchronization');
       }
     });
   }
@@ -1095,7 +1295,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.simulatingBatch = false;
-        this.showToast('Error al simular lote masivo');
+        this.showToast('Error simulating high-volume batch');
       }
     });
   }
@@ -1121,7 +1321,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.trackingCopied = false;
       }, 2500);
     }).catch(() => {
-      this.showToast(`Guía copiada: ${tracking}`);
+      this.showToast(`Tracking number copied: ${tracking}`);
     });
   }
 
@@ -1132,7 +1332,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.shipmentArrivalFilter = 'ALL';
     this.shipmentSearch = '';
     this.shipmentCurrentPage = 1;
-    this.showToast('Filtros restablecidos');
+    this.showToast('Filters reset');
   }
 
   onShipmentPageSizeChange() {
@@ -1142,21 +1342,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   exportShipmentsCSV() {
     const list = this.filteredShipments.length > 0 ? this.filteredShipments : this.realShipments;
     if (list.length === 0) {
-      this.showToast('No hay envíos disponibles para exportar');
+      this.showToast('No shipments available to export');
       return;
     }
 
     const headers = [
-      'ID Pedido',
-      'Canal',
-      'Transportista',
-      'Numero de Guia',
-      'Origen',
-      'Destino',
-      'Fase Actual',
-      'Ya Llego (Entregado)',
-      'Fecha Estimada',
-      'Fecha Creacion'
+      'Order ID',
+      'Channel',
+      'Carrier',
+      'Tracking Number',
+      'Origin',
+      'Destination',
+      'Current Step',
+      'Delivered',
+      'Estimated Delivery',
+      'Created At'
     ];
 
     const escapeCsv = (val: any) => {
@@ -1173,42 +1373,88 @@ export class DashboardComponent implements OnInit, OnDestroy {
       escapeCsv(s.origin || 'Houston Fulfillment Hub (TX)'),
       escapeCsv(s.destination),
       escapeCsv(s.current_step),
-      escapeCsv(s.is_delivered ? 'SI' : 'NO'),
+      escapeCsv(s.is_delivered ? 'YES' : 'NO'),
       escapeCsv(s.estimated_delivery),
       escapeCsv(s.created_at || new Date().toISOString())
     ].join(','));
 
-    // UTF-8 BOM (\uFEFF) for immediate Latin/Spanish encoding in Excel
+    // UTF-8 BOM (\uFEFF)
     const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const dateStr = new Date().toISOString().slice(0, 10);
     link.setAttribute('href', url);
-    link.setAttribute('download', `OrderSync_Envios_${dateStr}.csv`);
+    link.setAttribute('download', `OrderSync_Shipments_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    this.showToast(`Exportación lista: ${list.length} registros exportados a CSV`);
+    this.showToast(`Export complete: ${list.length} records exported to CSV`);
   }
 
-  clearShipmentsTable() {
-    if (!confirm('¿Confirmas que deseas limpiar todos los registros de la tabla de envíos y rutas?')) {
+  // Clear table with 2-step verification
+  showClearStep1Modal: boolean = false;
+  showClearStep2Modal: boolean = false;
+  clearGeneratedCode: string = '';
+  clearConfirmCodeInput: string = '';
+  clearingTable: boolean = false;
+
+  openClearTableModal() {
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    this.clearGeneratedCode = `OS-${randomNum}`;
+    this.clearConfirmCodeInput = '';
+    this.showClearStep1Modal = true;
+    this.showClearStep2Modal = false;
+  }
+
+  copyClearCode() {
+    if (this.clearGeneratedCode) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(this.clearGeneratedCode);
+      }
+      this.clearConfirmCodeInput = this.clearGeneratedCode;
+      this.showToast(`Code copied: ${this.clearGeneratedCode}`);
+    }
+  }
+
+  proceedToClearStep2() {
+    if (this.clearConfirmCodeInput.trim().toUpperCase() !== this.clearGeneratedCode.toUpperCase()) {
+      this.showToast('The entered code does not match the security code');
       return;
     }
+    this.showClearStep1Modal = false;
+    this.showClearStep2Modal = true;
+  }
+
+  closeClearModals() {
+    this.showClearStep1Modal = false;
+    this.showClearStep2Modal = false;
+    this.clearConfirmCodeInput = '';
+    this.clearGeneratedCode = '';
+  }
+
+  executeClearShipmentsTable() {
+    this.clearingTable = true;
     this.http.post<any>('http://localhost:3000/api/shipments/clear-all', {}).subscribe({
       next: (res) => {
+        this.clearingTable = false;
         this.realShipments = [];
-        this.showToast(res.message || 'Tabla de rutas limpiada con éxito');
+        this.closeClearModals();
+        this.showToast(res.message || 'Shipments table purged permanently');
         this.loadMetrics();
       },
       error: (err) => {
+        this.clearingTable = false;
         console.error('Error clearing shipments:', err);
-        this.showToast('Error al limpiar la tabla de envíos');
+        this.showToast('Error purging shipments table');
       }
     });
+  }
+
+  clearShipmentsTable() {
+    this.openClearTableModal();
   }
 
   purgeRetentionOldShipments(days: number = 60) {
@@ -1223,7 +1469,82 @@ export class DashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.purgingRetention = false;
         console.error('Error purging retention:', err);
-        this.showToast('Error al ejecutar la política de retención');
+        this.showToast('Error executing retention policy');
+      }
+    });
+  }
+
+  // ================= Shopify Official API Management =================
+  shopifyAdminToken: string = '';
+  shopifyStatus: any = null;
+  syncingShopifyApi: boolean = false;
+  testingShopifyApi: boolean = false;
+  savingShopifyToken: boolean = false;
+
+  loadShopifyStatus() {
+    this.http.get<any>('http://localhost:3000/api/v1/shopify/status').subscribe({
+      next: (res) => { this.shopifyStatus = res; },
+      error: (err) => console.error('Error loading Shopify status:', err)
+    });
+  }
+
+  saveShopifyAdminToken() {
+    if (!this.shopifyAdminToken.trim()) {
+      this.showToast('Please enter a valid Shopify access token');
+      return;
+    }
+    this.savingShopifyToken = true;
+    this.http.post<any>('http://localhost:3000/api/v1/shopify/configure', {
+      accessToken: this.shopifyAdminToken.trim()
+    }).subscribe({
+      next: (res) => {
+        this.savingShopifyToken = false;
+        this.showToast(res.message || 'Token saved successfully');
+        this.loadShopifyStatus();
+      },
+      error: (err) => {
+        this.savingShopifyToken = false;
+        this.showToast(err.error?.error || 'Error saving token');
+      }
+    });
+  }
+
+  testShopifyApiConnection() {
+    this.testingShopifyApi = true;
+    this.http.post<any>('http://localhost:3000/api/v1/shopify/test-connection', {}).subscribe({
+      next: (res) => {
+        this.testingShopifyApi = false;
+        if (res.success) {
+          this.showToast(`✅ Connected to store: ${res.data?.name || 'Shopify Store'} (${res.data?.currency || 'USD'})`);
+        } else {
+          this.showToast(`⚠️ ${res.error || 'Failed to connect to Shopify API'}`);
+        }
+      },
+      error: (err) => {
+        this.testingShopifyApi = false;
+        this.showToast('Network error connecting to Shopify API');
+      }
+    });
+  }
+
+  syncShopifyOrdersNow() {
+    this.syncingShopifyApi = true;
+    this.http.post<any>('http://localhost:3000/api/v1/shopify/sync-now', {}).subscribe({
+      next: (res) => {
+        this.syncingShopifyApi = false;
+        if (res.success) {
+          this.showToast(res.message || 'Orders synced from Shopify');
+          this.loadInitialOrders();
+          this.loadShipments();
+          this.loadMetrics();
+        } else {
+          this.showToast(res.error || 'Error syncing with Shopify');
+        }
+      },
+      error: (err) => {
+        this.syncingShopifyApi = false;
+        const msg = err.error?.error || 'Error connecting to Shopify API';
+        this.showToast(msg);
       }
     });
   }
@@ -1386,15 +1707,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   confirmRestockOrder() {
     if (!this.restockSupplier) {
-      this.showToast('Por favor seleccione un proveedor válido');
+      this.showToast('Please select a valid supplier');
       return;
     }
     if (!this.restockSelectedSku) {
-      this.showToast('Por favor seleccione un producto a surtir');
+      this.showToast('Please select a product to restock');
       return;
     }
     if (!this.restockUnits || this.restockUnits <= 0) {
-      this.showToast('Ingrese una cantidad válida mayor a 0');
+      this.showToast('Enter a valid quantity greater than 0');
       return;
     }
 
@@ -1406,7 +1727,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.restockLoading = false;
         this.showRestockModal = false;
-        this.showToast(res.message || 'Orden de surtido procesada exitosamente.');
+        this.showToast(res.message || 'Restock order processed successfully.');
         this.loadInventory();
         this.loadMetrics();
         this.loadPurchaseOrders();
@@ -1414,7 +1735,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.restockLoading = false;
         console.error('Error placing restock order:', err);
-        this.showToast('Error al procesar la orden de surtido.');
+        this.showToast('Error processing restock order.');
       }
     });
   }
@@ -1428,7 +1749,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         email: supplier.email || '',
         phone: supplier.phone || '',
         country: supplier.country || 'USA',
-        category: supplier.category || 'Hardware y Periféricos',
+        category: supplier.category || 'Hardware & Peripherals',
         lead_time_days: supplier.lead_time_days || 3,
         rating: Number(supplier.rating) || 4.8
       };
@@ -1440,7 +1761,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         email: '',
         phone: '',
         country: 'USA',
-        category: 'Hardware y Periféricos',
+        category: 'Hardware & Peripherals',
         lead_time_days: 3,
         rating: 4.8
       };
@@ -1455,7 +1776,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   saveSupplier() {
     if (!this.supplierForm.name.trim()) {
-      this.showToast('El nombre del proveedor es obligatorio');
+      this.showToast('Supplier name is required');
       return;
     }
 
@@ -1465,13 +1786,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
         next: (updated) => {
           this.supplierSaving = false;
           this.closeSupplierModal();
-          this.showToast(`Proveedor "${updated.name}" actualizado.`);
+          this.showToast(`Supplier "${updated.name}" updated.`);
           this.loadSuppliers();
         },
         error: (err) => {
           this.supplierSaving = false;
           console.error('Error updating supplier:', err);
-          this.showToast('Error al actualizar proveedor');
+          this.showToast('Error updating supplier');
         }
       });
     } else {
@@ -1479,28 +1800,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
         next: (created) => {
           this.supplierSaving = false;
           this.closeSupplierModal();
-          this.showToast(`Proveedor "${created.name}" registrado exitosamente.`);
+          this.showToast(`Supplier "${created.name}" registered successfully.`);
           this.loadSuppliers();
         },
         error: (err) => {
           this.supplierSaving = false;
           console.error('Error creating supplier:', err);
-          this.showToast('Error al registrar proveedor');
+          this.showToast('Error registering supplier');
         }
       });
     }
   }
 
   deleteSupplier(supplier: Supplier) {
-    if (!confirm(`¿Está seguro de eliminar al proveedor "${supplier.name}"?`)) return;
+    if (!confirm(`Are you sure you want to delete supplier "${supplier.name}"?`)) return;
     this.http.delete<any>(`http://localhost:3000/api/suppliers/${supplier.id}`).subscribe({
       next: (res) => {
-        this.showToast(res.message || 'Proveedor eliminado.');
+        this.showToast(res.message || 'Supplier deleted.');
         this.loadSuppliers();
       },
       error: (err) => {
         console.error('Error deleting supplier:', err);
-        this.showToast('No se pudo eliminar el proveedor.');
+        this.showToast('Failed to delete supplier.');
       }
     });
   }
@@ -1519,18 +1840,78 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // User Management Getters & Helpers
+  get totalAdminCount(): number {
+    return this.systemUsers.filter(u => u.role === 'Admin').length;
+  }
+
+  get totalOperatorCount(): number {
+    return this.systemUsers.filter(u => u.role === 'Operator').length;
+  }
+
+  get filteredSystemUsers(): any[] {
+    let list = this.systemUsers.filter(u => {
+      // 1. Search text filter
+      if (this.userSearch && this.userSearch.trim()) {
+        const q = this.userSearch.trim().toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const role = (u.role || '').toLowerCase();
+        if (!email.includes(q) && !role.includes(q)) return false;
+      }
+
+      // 2. Role filter
+      if (this.userRoleFilter !== 'all') {
+        if (u.role !== this.userRoleFilter) return false;
+      }
+
+      return true;
+    });
+
+    // 3. Sorting
+    return list.sort((a, b) => {
+      if (this.userSortBy === 'newest') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else if (this.userSortBy === 'oldest') {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else if (this.userSortBy === 'email-asc') {
+        return (a.email || '').localeCompare(b.email || '');
+      }
+      return 0;
+    });
+  }
+
+  openCreateUserModal() {
+    this.newEmail = '';
+    this.newPassword = '';
+    this.newRole = 'Operator';
+    this.userCreationError = '';
+    this.showNewPassword = false;
+    this.showCreateUserModal = true;
+  }
+
+  closeCreateUserModal() {
+    this.showCreateUserModal = false;
+    this.userCreationError = '';
+  }
+
   createUser() {
     this.userCreationError = '';
     if (!this.newEmail.trim() || !this.newPassword.trim()) {
-      this.userCreationError = 'Email and password are required.';
+      this.userCreationError = 'El correo electrónico y la contraseña son obligatorios.';
+      return;
+    }
+
+    if (this.newPassword.trim().length < 6) {
+      this.userCreationError = 'La contraseña debe tener al menos 6 caracteres.';
       return;
     }
 
     if (this.currentRole !== 'Admin') {
-      this.userCreationError = 'Access Denied: Only administrators have authority to create new users.';
+      this.userCreationError = 'Acceso Denegado: Solo administradores pueden registrar usuarios.';
       return;
     }
 
+    this.creatingUser = true;
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
@@ -1541,16 +1922,295 @@ export class DashboardComponent implements OnInit, OnDestroy {
       requesterRole: this.currentRole
     }, { headers }).subscribe({
       next: (res) => {
-        this.showToast(res.message || 'User registered successfully');
-        this.newEmail = '';
-        this.newPassword = '';
-        this.newRole = 'Operator';
+        this.creatingUser = false;
+        this.showToast(res.message || 'Usuario creado exitosamente');
+        this.closeCreateUserModal();
         this.loadUsers();
       },
       error: (err) => {
-        this.userCreationError = err.error?.error || 'Failed to create user.';
+        this.creatingUser = false;
+        this.userCreationError = err.error?.error || 'Error al crear el usuario.';
       }
     });
+  }
+
+  changeUserRole(user: any, newRole: UserRole) {
+    if (this.currentRole !== 'Admin') {
+      this.showToast('Acceso Denegado: Solo administradores pueden cambiar roles.');
+      return;
+    }
+
+    if (user.email === 'admin@ordersync.app' && newRole !== 'Admin') {
+      this.showToast('No se puede revocar el rol de Administrador a la cuenta raíz.');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+    this.http.put<any>(`http://localhost:3000/api/users/${user.id}`, {
+      role: newRole,
+      requesterRole: this.currentRole
+    }, { headers }).subscribe({
+      next: (res) => {
+        this.showToast(res.message || `Rol actualizado a ${newRole}`);
+        user.role = newRole;
+      },
+      error: (err) => {
+        this.showToast(err.error?.error || 'Error al actualizar el rol');
+      }
+    });
+  }
+
+  // Reset Password Modal
+  openResetPasswordModal(user: any) {
+    this.resetPasswordUser = user;
+    this.resetNewPassword = '';
+    this.resetPasswordError = '';
+    this.savingNewPassword = false;
+    this.showResetNewPassword = false;
+    this.showResetPasswordModal = true;
+  }
+
+  closeResetPasswordModal() {
+    this.showResetPasswordModal = false;
+    this.resetPasswordUser = null;
+    this.resetNewPassword = '';
+    this.resetPasswordError = '';
+  }
+
+  saveResetPassword() {
+    if (!this.resetPasswordUser) return;
+    if (!this.resetNewPassword || this.resetNewPassword.trim().length < 6) {
+      this.resetPasswordError = 'La nueva contraseña debe tener al menos 6 caracteres.';
+      return;
+    }
+
+    this.savingNewPassword = true;
+    this.resetPasswordError = '';
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+    this.http.put<any>(`http://localhost:3000/api/users/${this.resetPasswordUser.id}`, {
+      password: this.resetNewPassword.trim(),
+      requesterRole: this.currentRole
+    }, { headers }).subscribe({
+      next: (res) => {
+        this.savingNewPassword = false;
+        this.showToast(res.message || 'Contraseña actualizada con éxito');
+        this.closeResetPasswordModal();
+      },
+      error: (err) => {
+        this.savingNewPassword = false;
+        this.resetPasswordError = err.error?.error || 'Error al actualizar contraseña';
+      }
+    });
+  }
+
+  // Delete User Modal
+  openDeleteUserModal(user: any) {
+    if (user.email === 'admin@ordersync.app') {
+      this.showToast('No se puede eliminar la cuenta de administrador raíz.');
+      return;
+    }
+    if (user.email === this.currentUserEmail) {
+      this.showToast('No puedes eliminar tu propia cuenta en la sesión actual.');
+      return;
+    }
+    this.deletingUser = user;
+    this.deletingUserLoading = false;
+    this.showDeleteUserModal = true;
+  }
+
+  closeDeleteUserModal() {
+    this.showDeleteUserModal = false;
+    this.deletingUser = null;
+    this.deletingUserLoading = false;
+  }
+
+  confirmDeleteUser() {
+    if (!this.deletingUser) return;
+    this.deletingUserLoading = true;
+    const token = localStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+    this.http.delete<any>(`http://localhost:3000/api/users/${this.deletingUser.id}`, {
+      headers,
+      body: { requesterRole: this.currentRole }
+    }).subscribe({
+      next: (res) => {
+        this.deletingUserLoading = false;
+        this.showToast(res.message || 'Usuario eliminado correctamente');
+        this.systemUsers = this.systemUsers.filter(u => u.id !== this.deletingUser.id);
+        this.closeDeleteUserModal();
+      },
+      error: (err) => {
+        this.deletingUserLoading = false;
+        this.showToast(err.error?.error || 'Error al eliminar usuario');
+      }
+    });
+  }
+
+  // Role Management & Navbar Access Permission Methods
+  loadRoles() {
+    const saved = localStorage.getItem('ordersync_roles');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.roles = parsed;
+        }
+      } catch (e) {
+        console.error('Error parsing custom roles:', e);
+      }
+    }
+  }
+
+  saveRolesToStorage() {
+    localStorage.setItem('ordersync_roles', JSON.stringify(this.roles));
+  }
+
+  canAccessModule(moduleKey: ActiveModule): boolean {
+    if (this.currentRole === 'Admin') return true;
+    const currentRoleObj = this.roles.find(
+      r => r.name.toLowerCase() === (this.currentRole || '').toLowerCase()
+    );
+    if (!currentRoleObj) return moduleKey === 'dashboard';
+    return currentRoleObj.allowedModules.includes(moduleKey);
+  }
+
+  get hasOperationsAccess(): boolean {
+    return this.canAccessModule('logistics') || this.canAccessModule('returns') || this.canAccessModule('devops');
+  }
+
+  openCreateRoleModal() {
+    this.editingRoleName = '';
+    this.roleFormName = '';
+    this.roleFormDesc = '';
+    this.roleFormColor = 'purple';
+    this.roleFormError = '';
+    this.roleFormModules = {
+      dashboard: true,
+      metrics: false,
+      channels: false,
+      inventory: true,
+      suppliers: false,
+      customers: false,
+      users: false,
+      logistics: true,
+      returns: true,
+      devops: false
+    };
+    this.showRoleModal = true;
+  }
+
+  openEditRoleModal(role: AppRole) {
+    this.editingRoleName = role.name;
+    this.roleFormName = role.name;
+    this.roleFormDesc = role.description || '';
+    this.roleFormColor = role.color || 'purple';
+    this.roleFormError = '';
+    this.roleFormModules = {};
+    this.allNavModules.forEach(m => {
+      this.roleFormModules[m.key] = role.allowedModules.includes(m.key);
+    });
+    this.showRoleModal = true;
+  }
+
+  openManageRolesModal() {
+    this.showManageRolesModal = true;
+  }
+
+  closeManageRolesModal() {
+    this.showManageRolesModal = false;
+  }
+
+  closeRoleModal() {
+    this.showRoleModal = false;
+    this.editingRoleName = '';
+    this.roleFormError = '';
+  }
+
+  toggleSelectAllModules(select: boolean) {
+    this.allNavModules.forEach(m => {
+      this.roleFormModules[m.key] = select;
+    });
+  }
+
+  saveRole() {
+    const trimmed = this.roleFormName.trim();
+    if (!trimmed) {
+      this.roleFormError = 'Role name is required.';
+      return;
+    }
+
+    const selectedMods = this.allNavModules
+      .filter(m => !!this.roleFormModules[m.key])
+      .map(m => m.key);
+
+    if (selectedMods.length === 0) {
+      this.roleFormError = 'You must enable at least one navbar module.';
+      return;
+    }
+
+    if (!this.editingRoleName) {
+      const exists = this.roles.some(r => r.name.toLowerCase() === trimmed.toLowerCase());
+      if (exists) {
+        this.roleFormError = `A role named "${trimmed}" already exists.`;
+        return;
+      }
+
+      const newRoleObj: AppRole = {
+        name: trimmed,
+        description: this.roleFormDesc.trim() || `Custom role with ${selectedMods.length} module(s) enabled`,
+        color: this.roleFormColor,
+        isSystem: false,
+        allowedModules: selectedMods
+      };
+      this.roles.push(newRoleObj);
+      this.showToast(`Role "${trimmed}" created successfully with ${selectedMods.length} modules.`);
+    } else {
+      const idx = this.roles.findIndex(r => r.name.toLowerCase() === this.editingRoleName.toLowerCase());
+      if (idx !== -1) {
+        this.roles[idx].name = trimmed;
+        this.roles[idx].description = this.roleFormDesc.trim();
+        this.roles[idx].color = this.roleFormColor;
+        this.roles[idx].allowedModules = selectedMods;
+        this.showToast(`Role "${trimmed}" updated successfully.`);
+      }
+    }
+
+    this.saveRolesToStorage();
+    this.closeRoleModal();
+  }
+
+  deleteRole(role: AppRole) {
+    if (role.isSystem || role.name === 'Admin' || role.name === 'Operator') {
+      this.showToast('System base roles cannot be deleted.');
+      return;
+    }
+    const inUse = this.systemUsers.some(u => u.role === role.name);
+    if (inUse) {
+      this.showToast(`Cannot delete role "${role.name}" because it is currently assigned to active users.`);
+      return;
+    }
+    this.roles = this.roles.filter(r => r.name !== role.name);
+    this.saveRolesToStorage();
+    this.showToast(`Role "${role.name}" deleted successfully.`);
+  }
+
+  getRoleBadgeClass(roleName: string): string {
+    const r = this.roles.find(x => x.name.toLowerCase() === (roleName || '').toLowerCase());
+    const c = r?.color || (roleName === 'Admin' ? 'purple' : 'blue');
+    switch (c) {
+      case 'purple': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'blue': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'emerald': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'amber': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'indigo': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'rose': return 'bg-rose-50 text-rose-700 border-rose-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
   }
 
   loadInitialOrders() {
@@ -1560,8 +2220,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           ...o,
           total_amount: parseFloat(o.total_amount),
           customer: o.customer || {
-            full_name: 'Cliente General',
-            shipping_address: 'Almacén Principal'
+            full_name: 'General Customer',
+            shipping_address: 'Main Warehouse'
           }
         }));
         this.recalculateKPIs();
@@ -1614,43 +2274,426 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadHealth() {
-    this.http.get<any>('http://localhost:3000/health').subscribe({
-      next: (res) => {
-        this.systemUptime = Math.floor(res.uptime || 0);
+  // Customers Filtering & Pagination Getters
+  get availableCustomerChannels(): string[] {
+    const set = new Set<string>();
+    this.customers.forEach(c => {
+      if (c.channel) set.add(c.channel);
+    });
+    return Array.from(set);
+  }
+
+  get filteredCustomers(): CustomerRecord[] {
+    let list = this.customers.filter(c => {
+      // 1. Text Search Filter (Name, Order, Phone, Address, Channel, ID)
+      if (this.customerSearch && this.customerSearch.trim()) {
+        const q = this.customerSearch.trim().toLowerCase();
+        const name = (c.full_name || c.decrypted_name || '').toLowerCase();
+        const order = (c.external_order_id || '').toLowerCase();
+        const phone = (c.phone || c.decrypted_phone || '').toLowerCase();
+        const address = (c.shipping_address || c.decrypted_address || '').toLowerCase();
+        const channel = (c.channel || '').toLowerCase();
+        const id = (c.id || '').toLowerCase();
+        if (!name.includes(q) && !order.includes(q) && !phone.includes(q) && !address.includes(q) && !channel.includes(q) && !id.includes(q)) {
+          return false;
+        }
+      }
+
+      // 2. Channel Filter
+      if (this.customerChannelFilter && this.customerChannelFilter !== 'all') {
+        if ((c.channel || '').toLowerCase() !== this.customerChannelFilter.toLowerCase()) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // 3. Sorting
+    return list.sort((a, b) => {
+      if (this.customerSortBy === 'newest') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else if (this.customerSortBy === 'oldest') {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else if (this.customerSortBy === 'name-asc') {
+        const nameA = (a.full_name || a.decrypted_name || '').toLowerCase();
+        const nameB = (b.full_name || b.decrypted_name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      } else if (this.customerSortBy === 'name-desc') {
+        const nameA = (a.full_name || a.decrypted_name || '').toLowerCase();
+        const nameB = (b.full_name || b.decrypted_name || '').toLowerCase();
+        return nameB.localeCompare(nameA);
+      } else if (this.customerSortBy === 'order') {
+        const ordA = (a.external_order_id || '').toLowerCase();
+        const ordB = (b.external_order_id || '').toLowerCase();
+        return ordA.localeCompare(ordB);
+      }
+      return 0;
+    });
+  }
+
+  get paginatedCustomers(): CustomerRecord[] {
+    const list = this.filteredCustomers;
+    if (this.customerPageSize === -1) {
+      return list;
+    }
+    const start = (this.customerCurrentPage - 1) * this.customerPageSize;
+    return list.slice(start, start + this.customerPageSize);
+  }
+
+  get totalCustomerPages(): number {
+    if (this.customerPageSize === -1) return 1;
+    return Math.ceil(this.filteredCustomers.length / this.customerPageSize) || 1;
+  }
+
+  get customerPaginationStart(): number {
+    if (this.filteredCustomers.length === 0) return 0;
+    return (this.customerCurrentPage - 1) * this.customerPageSize + 1;
+  }
+
+  get customerPaginationEnd(): number {
+    if (this.customerPageSize === -1) return this.filteredCustomers.length;
+    return Math.min(this.customerCurrentPage * this.customerPageSize, this.filteredCustomers.length);
+  }
+
+  setCustomerPage(page: number) {
+    if (page >= 1 && page <= this.totalCustomerPages) {
+      this.customerCurrentPage = page;
+    }
+  }
+
+  onCustomerFilterChange() {
+    this.customerCurrentPage = 1;
+  }
+
+  onCustomerPageSizeChange() {
+    this.customerCurrentPage = 1;
+  }
+
+  resetCustomerFilters() {
+    this.customerSearch = '';
+    this.customerChannelFilter = 'all';
+    this.customerSortBy = 'newest';
+    this.customerPageSize = 10;
+    this.customerCurrentPage = 1;
+  }
+
+  getCustomerInitials(name?: string): string {
+    if (!name || !name.trim()) return 'CU';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  copyCustomerData(text: string, label: string) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      this.showToast(`${label} copiado al portapapeles`);
+    }
+  }
+
+  // Texas Data Privacy and Security Act (TDPSA) Handlers
+  exportCustomerTdpsa(customer: any) {
+    this.http.get(`http://localhost:3000/api/customers/${customer.id}/export`).subscribe({
+      next: (data: any) => {
+        const jsonStr = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TDPSA_Portability_Export_${customer.external_order_id || customer.id}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.showToast('Certificado de portabilidad TDPSA descargado correctamente');
       },
       error: () => {
-        this.serverStatus = 'Offline';
+        this.showToast('Error al exportar datos del cliente bajo TDPSA');
       }
     });
   }
 
+  anonymizeCustomerTdpsa(customer: any) {
+    if (!confirm(`¿Ejercer Derecho al Olvido (TDPSA Sec. 541.051)? Se anonimizarán de forma permanente el nombre, dirección y teléfono de "${customer.full_name || customer.decrypted_name}".`)) {
+      return;
+    }
+    this.http.post<any>(`http://localhost:3000/api/customers/${customer.id}/anonymize`, {
+      actorEmail: this.currentUserEmail,
+      reason: 'TDPSA Consumer Right to Erasure Request'
+    }).subscribe({
+      next: (res) => {
+        this.showToast('Datos PII anonimizados exitosamente conforme a TDPSA (Texas)');
+        customer.full_name = 'ANONYMIZED_TDPSA_CONSUMER';
+        customer.decrypted_name = 'ANONYMIZED_TDPSA_CONSUMER';
+        customer.shipping_address = 'REDACTED_PER_TEXAS_DATA_PRIVACY_ACT';
+        customer.decrypted_address = 'REDACTED_PER_TEXAS_DATA_PRIVACY_ACT';
+        customer.phone = '000-000-0000';
+        customer.decrypted_phone = '000-000-0000';
+      },
+      error: (err) => {
+        this.showToast(err.error?.error || 'Error al anonimizar cliente');
+      }
+    });
+  }
+
+  loadHealth() {
+    this.devopsLoading = true;
+    this.http.get<any>('http://localhost:3000/api/devops/telemetry').subscribe({
+      next: (res) => {
+        this.devopsTelemetry = res;
+        this.systemUptime = Math.floor(res.system?.uptimeSeconds || 0);
+        this.serverStatus = res.status === 'healthy' ? 'Online (Healthy)' : (res.status === 'degraded' ? 'Degraded Performance' : 'Offline');
+        this.devopsLoading = false;
+      },
+      error: () => {
+        this.serverStatus = 'Offline';
+        this.devopsLoading = false;
+      }
+    });
+    this.loadDevopsLogs();
+    this.loadPrometheusMetrics();
+  }
+
+  loadDevopsLogs() {
+    this.http.get<any[]>(`http://localhost:3000/api/devops/logs?level=${this.devopsLogFilter}`).subscribe({
+      next: (logs) => {
+        this.devopsLogs = logs;
+      },
+      error: (err) => console.error('Error fetching devops logs:', err)
+    });
+  }
+
+  loadPrometheusMetrics() {
+    this.http.get('http://localhost:3000/metrics', { responseType: 'text' }).subscribe({
+      next: (metrics) => {
+        this.devopsPrometheusMetricsRaw = metrics;
+      },
+      error: (err) => console.error('Error fetching metrics:', err)
+    });
+  }
+
+  pingDatabaseNow() {
+    this.devopsPingLoading = true;
+    this.http.post<any>('http://localhost:3000/api/devops/ping-db', {}).subscribe({
+      next: (res) => {
+        this.devopsPingLoading = false;
+        if (this.devopsTelemetry && this.devopsTelemetry.database) {
+          this.devopsTelemetry.database.latencyMs = res.latencyMs;
+          this.devopsTelemetry.database.status = res.status === 'ok' ? (res.latencyMs > 600 ? 'high_latency' : 'connected') : 'disconnected';
+        }
+        this.showToast(`Neon DB Ping: ${res.latencyMs} ms (${res.status.toUpperCase()})`);
+        this.loadDevopsLogs();
+      },
+      error: (err) => {
+        this.devopsPingLoading = false;
+        this.showToast(`Error ping DB: ${err.message || 'Error'}`);
+      }
+    });
+  }
+
+  setDevopsLogFilter(filter: string) {
+    this.devopsLogFilter = filter;
+    this.loadDevopsLogs();
+  }
+
+  clearDevopsLogsView() {
+    this.devopsLogs = [];
+    this.showToast('Vista de registros limpiada.');
+  }
+
+  // Inventory Filtering & Pagination Getters
+  get filteredInventoryItems(): InventoryItem[] {
+    return this.inventoryItems.filter(item => {
+      // 1. Text Search Filter (Name, SKU, Supplier, Type)
+      if (this.inventorySearch && this.inventorySearch.trim()) {
+        const q = this.inventorySearch.trim().toLowerCase();
+        const matchName = (item.product_name || '').toLowerCase().includes(q);
+        const matchSku = (item.sku || '').toLowerCase().includes(q);
+        const matchSupplier = (item.supplier_name || '').toLowerCase().includes(q);
+        const matchType = (item.product_type || '').toLowerCase().includes(q);
+        if (!matchName && !matchSku && !matchSupplier && !matchType) return false;
+      }
+
+      // 2. Stock Health Filter (e.g. Almost out / low stock < 20)
+      const stock = Number(item.stock_quantity) || 0;
+      if (this.inventoryStockFilter === 'low') {
+        if (stock <= 0 || stock >= 20) return false; // low: almost out (1 - 19)
+      } else if (this.inventoryStockFilter === 'out') {
+        if (stock > 0) return false; // completely out of stock (0)
+      } else if (this.inventoryStockFilter === 'in') {
+        if (stock < 20) return false; // healthy stock (20+)
+      }
+
+      // 3. Product Type / Category Filter
+      if (this.inventoryTypeFilter && this.inventoryTypeFilter !== 'all') {
+        const itemType = (item.product_type || 'Electronics').trim().toLowerCase();
+        const selected = this.inventoryTypeFilter.trim().toLowerCase();
+        if (itemType !== selected) return false;
+      }
+
+      return true;
+    });
+  }
+
+  get paginatedInventoryItems(): InventoryItem[] {
+    const list = this.filteredInventoryItems;
+    if (this.inventoryPageSize === -1) {
+      return list;
+    }
+    const start = (this.inventoryCurrentPage - 1) * this.inventoryPageSize;
+    return list.slice(start, start + this.inventoryPageSize);
+  }
+
+  get totalInventoryPages(): number {
+    if (this.inventoryPageSize === -1) return 1;
+    return Math.ceil(this.filteredInventoryItems.length / this.inventoryPageSize) || 1;
+  }
+
+  setInventoryPage(page: number) {
+    if (page >= 1 && page <= this.totalInventoryPages) {
+      this.inventoryCurrentPage = page;
+    }
+  }
+
+  onInventoryFilterChange() {
+    this.inventoryCurrentPage = 1;
+  }
+
+  onInventoryPageSizeChange() {
+    this.inventoryCurrentPage = 1;
+  }
+
+  loadProductTypes() {
+    this.http.get<string[]>('http://localhost:3000/api/inventory/types').subscribe({
+      next: (types) => {
+        if (types && types.length > 0) {
+          this.productTypes = types;
+        }
+      },
+      error: (err) => console.error('Error loading product types:', err)
+    });
+  }
+
+  openCreateTypeModal() {
+    this.newTypeName = '';
+    this.showCreateTypeModal = true;
+  }
+
+  closeCreateTypeModal() {
+    this.showCreateTypeModal = false;
+    this.newTypeName = '';
+    this.creatingType = false;
+  }
+
+  submitCreateProductType() {
+    if (!this.newTypeName.trim()) {
+      this.showToast('Please enter a valid product type name');
+      return;
+    }
+    this.creatingType = true;
+    this.http.post<any>('http://localhost:3000/api/inventory/types', {
+      name: this.newTypeName.trim()
+    }).subscribe({
+      next: (res) => {
+        this.creatingType = false;
+        if (res.types && res.types.length > 0) {
+          this.productTypes = res.types;
+        } else if (!this.productTypes.includes(res.created)) {
+          this.productTypes.push(res.created);
+        }
+        this.newProdType = res.created || this.newTypeName.trim();
+        this.closeCreateTypeModal();
+        this.showToast(`Product type "${res.created}" registered successfully`);
+      },
+      error: (err) => {
+        this.creatingType = false;
+        console.error('Error creating product type:', err);
+        this.showToast(err.error?.error || 'Failed to create product type');
+      }
+    });
+  }
+
+  openRegisterProductModal() {
+    this.newProdChannel = 'Shopify';
+    this.newProdSku = '';
+    this.newProdName = '';
+    this.newProdStock = 25;
+    this.newProdCost = 35.00;
+    this.newProdPrice = 79.99;
+    this.newProdImageUrl = '';
+    this.newProdImagePreview = '';
+    this.newProdDescription = '';
+    this.newProdType = this.productTypes[0] || 'Electronics';
+    this.publishingProduct = false;
+    this.showRegisterProductModal = true;
+  }
+
+  closeRegisterProductModal() {
+    this.showRegisterProductModal = false;
+    this.publishingProduct = false;
+  }
+
+  onProductImageSelected(event: any) {
+    const file = event.target?.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        this.showToast('Image file too large (Max 5MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.newProdImageUrl = reader.result as string;
+        this.newProdImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  onProductImageUrlChange() {
+    this.newProdImagePreview = this.newProdImageUrl ? this.newProdImageUrl.trim() : '';
+  }
+
+  clearProductImage() {
+    this.newProdImageUrl = '';
+    this.newProdImagePreview = '';
+  }
+
   createInventoryProduct() {
     if (!this.newProdSku.trim() || !this.newProdName.trim()) {
-      this.showToast('SKU y Nombre de producto son requeridos');
+      this.showToast('SKU and Product Name are required');
       return;
     }
 
-    this.http.post<any>('http://localhost:3000/api/inventory', {
+    this.publishingProduct = true;
+    const payload = {
       sku: this.newProdSku.trim().toUpperCase(),
       product_name: this.newProdName.trim(),
       stock_quantity: Number(this.newProdStock) || 0,
       supplier_name: this.newProdSupplier,
-      unit_cost: Number(this.newProdCost) || 45.00,
-      sale_price: Number(this.newProdPrice) || 89.99
-    }).subscribe({
+      unit_cost: Number(this.newProdCost) || 0,
+      sale_price: Number(this.newProdPrice) || 0,
+      image_url: this.newProdImageUrl ? this.newProdImageUrl.trim() : undefined,
+      channel: this.newProdChannel,
+      description: this.newProdDescription ? this.newProdDescription.trim() : undefined,
+      product_type: this.newProdType || 'Electronics'
+    };
+
+    this.http.post<any>('http://localhost:3000/api/inventory', payload).subscribe({
       next: (res) => {
-        this.showToast(`Producto ${res.sku} creado con éxito en inventario`);
-        this.newProdSku = '';
-        this.newProdName = '';
-        this.newProdStock = 40;
-        this.showProductForm = false;
+        this.publishingProduct = false;
+        this.closeRegisterProductModal();
+        if (res.shopify_product_id) {
+          this.showToast(`Product ${res.sku} published directly to Shopify Store (ID: ${res.shopify_product_id})!`);
+        } else {
+          this.showToast(`Product ${res.sku} registered in Central Inventory`);
+        }
         this.loadInventory();
         this.loadMetrics();
       },
       error: (err) => {
-        console.error('Error creating product:', err);
-        this.showToast('Error al registrar producto en inventario');
+        this.publishingProduct = false;
+        console.error('Error creating product in inventory/Shopify:', err);
+        const errMsg = err.error?.error || 'Failed to publish product to Shopify and inventory';
+        this.showToast(errMsg);
       }
     });
   }
@@ -1851,6 +2894,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   setRole(role: UserRole) {
     this.currentRole = role;
     localStorage.setItem('ordersync_role', role);
+    if (!this.canAccessModule(this.activeModule)) {
+      this.activeModule = 'dashboard';
+    }
     this.showToast(this.t.changesSaved);
   }
 

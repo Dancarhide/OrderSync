@@ -157,16 +157,45 @@ Para migraciones posteriores, agregue nuevos archivos SQL numerados (p. ej., `00
 
 ## 7. Monitoreo y Observabilidad
 
-Para despliegues en producción, se recomiendan las siguientes integraciones de monitoreo:
+OrderSync incorpora una suite completa de observabilidad y telemetría diseñada para entornos Kubernetes, Prometheus, Datadog y paneles de control SRE:
+
+### 7.1 Sondas de Producción y Endpoints de Métricas
+
+| Endpoint | Protocolo / Formato | Propósito | Estado Esperado |
+|---|---|---|---|
+| `GET /health` | JSON | SLA integral, latencia ping a base de datos, memoria del proceso y tiempo activo | `200 OK` (o `503 Service Unavailable`) |
+| `GET /ready` | JSON | Sonda de Disponibilidad Kubernetes (Validación `SELECT 1;` contra PostgreSQL) | `200 OK` |
+| `GET /live` | JSON | Sonda de Vida Kubernetes (Respuesta activa del kernel Node.js) | `200 OK` |
+| `GET /metrics` | Prometheus (RFC 0.0.4) | Exposición estandarizada de métricas para scraping por Prometheus / Grafana | `200 OK` |
+| `GET /api/devops/telemetry` | JSON | Reporte de telemetría en tiempo real consumido por la Consola de Administración Angular | `200 OK` |
+| `POST /api/devops/ping-db` | JSON | Benchmark en tiempo real de latencia ida y vuelta contra PostgreSQL | `200 OK` |
+| `GET /api/devops/logs` | JSON | Flujo en vivo de eventos recientes del runtime y auditoría de seguridad ISO 27001 | `200 OK` |
+
+### 7.2 Exposición de Métricas Prometheus (`GET /metrics`)
+
+Las siguientes métricas estandarizadas se exportan en `/metrics`:
+```promql
+ordersync_uptime_seconds            # Tiempo total de actividad del servicio en segundos
+ordersync_memory_rss_bytes          # Memoria física ocupada (Resident Set Size)
+ordersync_memory_heap_used_bytes    # Memoria Heap utilizada por V8
+ordersync_database_ping_latency_ms  # Duración ida y vuelta de consulta contra PostgreSQL
+ordersync_database_pool_total       # Total de conexiones en el pool
+ordersync_database_pool_idle        # Conexiones inactivas disponibles
+ordersync_webhook_requests_total    # Contador de webhooks procesados
+ordersync_webhook_avg_latency_ms    # Tiempo promedio de sincronización de extremo a extremo
+ordersync_websocket_clients_active  # Clientes Socket.io activos conectados en tiempo real
+ordersync_health_status             # Estado binario de salud (1=saludable, 0=degradado/caído)
+```
+
+### 7.3 Integraciones de Monitoreo Empresarial
 
 | Herramienta | Propósito |
 |---|---|
-| **Datadog / New Relic** | APM, seguimiento de latencia, tasas de error |
-| **PagerDuty** | Alertas cuando se incumple el SLA de latencia de sincronización |
-| **Sentry** | Seguimiento de errores en tiempo real para excepciones del backend |
-| **AWS CloudWatch / GCP Monitoring** | Métricas a nivel de infraestructura |
-
-El endpoint `/health` puede ser sondeado por cualquier servicio de monitoreo de disponibilidad (p. ej., UptimeRobot, Pingdom) para garantizar el cumplimiento del SLA de disponibilidad del 99.9%.
+| **Prometheus / Grafana** | Scraping de métricas vía `/metrics` y tableros con alertas |
+| **Datadog / New Relic** | APM, rastreo distribuido de peticiones y tasas de error |
+| **PagerDuty** | Notificaciones críticas cuando la latencia supera el SLA de 500 ms |
+| **Sentry** | Detección y rastreo de excepciones no controladas en el backend |
+| **AWS CloudWatch / GCP Monitoring** | Métricas a nivel de servidor y contenedores |
 
 ---
 

@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { Pool } from 'pg';
 import { Server } from 'socket.io';
 import { EncryptionService } from '../services/encryption.service';
+import { DevOpsService } from '../services/devops.service';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -173,6 +174,15 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
     return processShopifyRefundPayload(io, req.body, res);
   }
 
+  // Intercept Shopify Fulfillment / Shipment Status Webhooks (fulfillments/create, fulfillments/update, orders/fulfilled, orders/updated)
+  if (
+    topic.startsWith('fulfillments/') || 
+    topic === 'orders/fulfilled' || 
+    (topic === 'orders/updated' && (req.body?.fulfillment_status === 'fulfilled' || req.body?.fulfillments?.length > 0))
+  ) {
+    return processShopifyFulfillmentPayload(io, req.body, topic, res);
+  }
+
   // 2. Normalize payload
   const orderData = normalizePayload(req, channel);
   const { external_order_id, status, total_amount, currency, customer, items } = orderData;
@@ -280,6 +290,7 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
     };
 
     io.emit('ORDER_SYNCED', broadcastPayload);
+    DevOpsService.recordWebhookExecution(sync_latency_ms, true);
 
     console.log(`[OrderSync] Order ${external_order_id} synced in ${sync_latency_ms}ms via ${channel}`);
 
@@ -351,7 +362,8 @@ export async function processShopifyRefundPayload(io: Server, payload: any, res:
       const itemsRes = await pool.query('SELECT * FROM order_items WHERE order_id = $1 LIMIT 1', [matchedOrder.id]);
       if (itemsRes.rows.length > 0) {
         sku = itemsRes.rows[0].sku;
-        productName = itemsRes.rows[0].product_name;
+        const rawProd = itemsRes.rows[0].product_name;
+        productName = rawProd && rawProd.startsWith('ENC[') ? EncryptionService.decryptString(rawProd) : rawProd;
         quantity = itemsRes.rows[0].quantity;
         refundAmount = parseFloat(itemsRes.rows[0].unit_price) * quantity;
       }
@@ -420,3 +432,118 @@ export async function processShopifyRefundPayload(io: Server, payload: any, res:
     res.status(500).json({ error: 'Shopify refund processing failed' });
   }
 }
+
+/**
+ * Handles Shopify Fulfillment webhooks (fulfillments/create, fulfillments/update, orders/fulfilled, orders/updated)
+ * to automatically advance shipment stages directly from Shopify without manual buttons.
+ */
+export async function processShopifyFulfillmentPayload(io: Server, payload: any, topic: string, res: Response): Promise<void> {
+  try {
+    const rawOrderId = payload?.order_id || payload?.id;
+    const orderName = payload?.name ? String(payload.name) : (payload?.order_number ? `#${payload.order_number}` : (rawOrderId ? `#${rawOrderId}` : ''));
+    
+    // Look up matching order or shipment
+    const shipRes = await pool.query(
+      `SELECT s.*, o.external_order_id as order_code 
+       FROM shipments s
+       LEFT JOIN orders o ON s.order_id = o.id
+       WHERE s.external_order_id = $1 
+          OR s.external_order_id = $2
+          OR o.external_order_id = $1 
+          OR o.external_order_id = $2
+          OR (s.channel = 'Shopify' AND s.is_delivered = false)
+       ORDER BY s.created_at DESC LIMIT 1`,
+      [orderName, String(rawOrderId)]
+    );
+
+    if (shipRes.rows.length === 0) {
+      res.status(200).json({ message: 'No matching shipment found for fulfillment' });
+      return;
+    }
+
+    const current = shipRes.rows[0];
+    let nextStep: 'processing' | 'in_transit' | 'out_for_delivery' | 'delivered' = current.current_step;
+    let isDelivered = current.is_delivered;
+    let estDelivery = current.estimated_delivery;
+
+    const shipmentStatus = String(payload?.shipment_status || payload?.status || '').toLowerCase();
+    const fulfillmentStatus = String(payload?.fulfillment_status || '').toLowerCase();
+
+    if (shipmentStatus === 'delivered' || shipmentStatus === 'confirmed_delivery') {
+      nextStep = 'delivered';
+      isDelivered = true;
+      estDelivery = '¡Producto entregado con éxito! (Confirmado Shopify)';
+    } else if (shipmentStatus === 'out_for_delivery') {
+      nextStep = 'out_for_delivery';
+      isDelivered = false;
+      estDelivery = 'En unidad de reparto local (Llega hoy)';
+    } else if (shipmentStatus === 'in_transit' || fulfillmentStatus === 'fulfilled' || topic === 'orders/fulfilled' || topic.includes('fulfillment')) {
+      if (current.current_step === 'processing') {
+        nextStep = 'in_transit';
+        estDelivery = 'En ruta interestatal con transportista (Shopify)';
+      } else if (current.current_step === 'in_transit') {
+        nextStep = 'out_for_delivery';
+        estDelivery = 'En reparto hacia el domicilio (Shopify API)';
+      } else {
+        nextStep = 'delivered';
+        isDelivered = true;
+        estDelivery = '¡Entregado a destinatario! (Shopify API)';
+      }
+    }
+
+    const stepOrder = ['processing', 'in_transit', 'out_for_delivery', 'delivered'];
+    const targetIdx = stepOrder.indexOf(nextStep);
+
+    const titles: Record<string, string> = {
+      processing: 'Orden Procesada y Empacada (Shopify)',
+      in_transit: 'Despachado y en Tránsito (Shopify API)',
+      out_for_delivery: 'En Reparto Local (Llega hoy)',
+      delivered: '¡Entregado a destinatario! (Confirmado Shopify)'
+    };
+
+    const checkpoints = stepOrder.map((stepKey, idx) => ({
+      step: stepKey,
+      title: titles[stepKey],
+      timestamp: idx <= targetIdx ? (idx === targetIdx ? 'Recién actualizado vía Shopify' : 'Completado') : 'Pendiente',
+      done: idx <= targetIdx
+    }));
+
+    const trackingNumber = payload?.tracking_number || payload?.fulfillments?.[0]?.tracking_number || null;
+    const trackingCompany = payload?.tracking_company || payload?.fulfillments?.[0]?.tracking_company || null;
+
+    const encTracking = trackingNumber ? EncryptionService.encryptString(trackingNumber) : null;
+
+    const updateRes = await pool.query(
+      `UPDATE shipments 
+       SET current_step = $1, 
+           is_delivered = $2, 
+           estimated_delivery = $3, 
+           checkpoints = $4,
+           carrier = COALESCE($5, carrier),
+           tracking_number = COALESCE($6, tracking_number),
+           delivered_at = CASE WHEN $2 = true THEN CURRENT_TIMESTAMP ELSE delivered_at END
+       WHERE id = $7
+       RETURNING *`,
+      [nextStep, isDelivered, estDelivery, JSON.stringify(checkpoints), trackingCompany, encTracking, current.id]
+    );
+
+    const updatedShipment = {
+      ...updateRes.rows[0],
+      destination: EncryptionService.decryptString(updateRes.rows[0].destination),
+      tracking_number: EncryptionService.decryptString(updateRes.rows[0].tracking_number)
+    };
+
+    io.emit('SHIPMENT_UPDATED', updatedShipment);
+    console.log(`[Shopify Fulfillment API] Shipment for order ${orderName || current.external_order_id} advanced to ${nextStep}`);
+
+    res.status(200).json({
+      status: 'success',
+      message: `Shipment advanced via Shopify API to: ${nextStep}`,
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error('Error processing Shopify fulfillment webhook:', error);
+    res.status(500).json({ error: 'Shopify fulfillment processing failed' });
+  }
+}
+

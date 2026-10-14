@@ -157,16 +157,45 @@ For subsequent migrations, add new numbered SQL files (e.g., `002_add_index.sql`
 
 ## 7. Monitoring & Observability
 
-For production deployments, the following monitoring integrations are recommended:
+OrderSync incorporates a production-grade observability and telemetry suite designed for Kubernetes, Prometheus, Datadog, and executive SRE monitoring:
+
+### 7.1 Production Probes & Metrics Endpoints
+
+| Endpoint | Protocol / Format | Purpose | Expected Status |
+|---|---|---|---|
+| `GET /health` | JSON | Comprehensive SLA, DB ping latency, process memory, and system uptime | `200 OK` (or `503 Service Unavailable`) |
+| `GET /ready` | JSON | Kubernetes Readiness Probe (`SELECT 1;` DB validation) | `200 OK` |
+| `GET /live` | JSON | Kubernetes Liveness Probe (Kernel responsiveness) | `200 OK` |
+| `GET /metrics` | Prometheus (RFC 0.0.4) | Standard metric exposition for Prometheus / Grafana scraping | `200 OK` |
+| `GET /api/devops/telemetry` | JSON | Full telemetry report consumed by the Angular Admin Console | `200 OK` |
+| `POST /api/devops/ping-db` | JSON | On-demand roundtrip latency test against PostgreSQL | `200 OK` |
+| `GET /api/devops/logs` | JSON | Live stream of recent runtime and security audit events | `200 OK` |
+
+### 7.2 Prometheus Metrics Exposition (`GET /metrics`)
+
+The following standard gauges and counters are exported at `/metrics`:
+```promql
+ordersync_uptime_seconds            # Total service uptime in seconds
+ordersync_memory_rss_bytes          # Resident Set Size memory footprint
+ordersync_memory_heap_used_bytes    # V8 Heap memory used
+ordersync_database_ping_latency_ms  # PostgreSQL roundtrip query duration
+ordersync_database_pool_total       # Total connections in connection pool
+ordersync_database_pool_idle        # Idle connections ready for checkout
+ordersync_webhook_requests_total    # Ingested webhook count
+ordersync_webhook_avg_latency_ms    # Average end-to-end sync processing time
+ordersync_websocket_clients_active  # Connected real-time Socket.io clients
+ordersync_health_status             # Binary health state (1=healthy, 0=degraded/down)
+```
+
+### 7.3 Enterprise Monitoring Integrations
 
 | Tool | Purpose |
 |---|---|
-| **Datadog / New Relic** | APM, latency tracking, error rates |
-| **PagerDuty** | Alerting when sync latency SLA is breached |
-| **Sentry** | Real-time error tracking for backend exceptions |
-| **AWS CloudWatch / GCP Monitoring** | Infrastructure-level metrics |
-
-The `/health` endpoint can be polled by any uptime monitoring service (e.g., UptimeRobot, Pingdom) to ensure the 99.9% availability SLA is maintained.
+| **Prometheus / Grafana** | Metrics scraping via `/metrics` and dashboard alerting |
+| **Datadog / New Relic** | APM, distributed tracing, error rates |
+| **PagerDuty** | Alerting when sync latency SLA exceeds 500 ms |
+| **Sentry** | Real-time error tracking for unhandled backend exceptions |
+| **AWS CloudWatch / GCP Monitoring** | Host and container-level metrics |
 
 ---
 
