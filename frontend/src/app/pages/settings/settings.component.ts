@@ -7,6 +7,8 @@ import { TranslationService, SupportedLanguage } from '../../services/translatio
 
 export type UserRole = 'Admin' | 'Operator';
 
+import { environment } from '../../../environments/environment';
+
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -20,7 +22,7 @@ export class SettingsComponent implements OnInit {
   currentRole: UserRole = (localStorage.getItem('ordersync_role') as UserRole) || 'Admin';
 
   savedNotification = false;
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = `${environment.apiUrl}/api`;
 
   // Security & Texas TDPSA State
   kmsStatus: any = null;

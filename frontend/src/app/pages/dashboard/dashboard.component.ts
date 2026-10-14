@@ -1,3 +1,5 @@
+import { environment } from '../../../environments/environment';
+const API_BASE = environment.apiUrl;
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -259,6 +261,7 @@ interface Toast {
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private socket!: Socket;
+  readonly apiBase = API_BASE;
 
   // Active module in sidebar
   activeModule: ActiveModule = 'dashboard';
@@ -818,11 +821,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadShopifyStatus();
     this.loadProductTypes();
 
-    this.http.get<any>('http://localhost:3000/api/shipments/auto-engine/status').subscribe({
+    this.http.get<any>(`${API_BASE}/api/shipments/auto-engine/status`).subscribe({
       next: (res) => { this.autoDispatchActive = !!res.active; }
     });
 
-    this.socket = io('http://localhost:3000');
+    this.socket = io(`${API_BASE}`);
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
@@ -950,7 +953,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadReturns() {
     this.returnsLoading = true;
-    this.http.get<ReturnRecord[]>('http://localhost:3000/api/returns').subscribe({
+    this.http.get<ReturnRecord[]>(`${API_BASE}/api/returns`).subscribe({
       next: (data) => {
         this.returns = data;
         this.returnsLoading = false;
@@ -964,7 +967,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   processReturn(ret: ReturnRecord, action: 'approve' | 'receive_restock' | 'decline') {
     this.processingReturnId = ret.id;
-    this.http.post<any>(`http://localhost:3000/api/returns/${ret.id}/process`, {
+    this.http.post<any>(`${API_BASE}/api/returns/${ret.id}/process`, {
       action,
       restock_inventory: ret.restock_inventory
     }).subscribe({
@@ -1081,7 +1084,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     };
 
-    this.http.post('http://localhost:3000/api/simulate/shopify-refund', payload).subscribe({
+    this.http.post(`${API_BASE}/api/simulate/shopify-refund`, payload).subscribe({
       next: (res: any) => {
         this.isSimulating = false;
         this.showToast(`Shopify Return processed via Webhook: ${res.return?.return_number}`);
@@ -1117,7 +1120,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       notes: this.newReturnNotes
     };
 
-    this.http.post<ReturnRecord>('http://localhost:3000/api/returns', payload).subscribe({
+    this.http.post<ReturnRecord>(`${API_BASE}/api/returns`, payload).subscribe({
       next: (created) => {
         this.closeReturnModal();
         this.showToast(`Return ${created.return_number} officially created.`);
@@ -1133,7 +1136,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   seedDemoReturns() {
     this.returnsLoading = true;
-    this.http.post<any>('http://localhost:3000/api/returns/seed', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/returns/seed`, {}).subscribe({
       next: (res) => {
         this.returns = res.returns || [];
         this.returnsLoading = false;
@@ -1151,7 +1154,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   deleteReturn(id: string) {
     if (!confirm('¿Eliminar este registro de devolución?')) return;
-    this.http.delete(`http://localhost:3000/api/returns/${id}`).subscribe({
+    this.http.delete(`${API_BASE}/api/returns/${id}`).subscribe({
       next: () => {
         this.returns = this.returns.filter(r => r.id !== id);
         this.showToast('Registro de devolución eliminado.');
@@ -1172,7 +1175,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const query = this.selectedMetricsMonth && this.selectedMetricsMonth !== 'all'
       ? `?month=${encodeURIComponent(this.selectedMetricsMonth)}`
       : '';
-    this.http.get<ExecutiveMetrics>(`http://localhost:3000/api/metrics${query}`).subscribe({
+    this.http.get<ExecutiveMetrics>(`${API_BASE}/api/metrics${query}`).subscribe({
       next: (data) => {
         this.metrics = data;
         if (data.availableMonths && data.availableMonths.length > 0) {
@@ -1196,7 +1199,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadSuppliers() {
     this.suppliersLoading = true;
-    this.http.get<Supplier[]>('http://localhost:3000/api/suppliers').subscribe({
+    this.http.get<Supplier[]>(`${API_BASE}/api/suppliers`).subscribe({
       next: (data) => {
         this.suppliers = data;
         this.suppliersLoading = false;
@@ -1210,7 +1213,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadShipments() {
     this.shipmentsLoading = true;
-    this.http.get<RealShipment[]>('http://localhost:3000/api/shipments').subscribe({
+    this.http.get<RealShipment[]>(`${API_BASE}/api/shipments`).subscribe({
       next: (data) => {
         this.realShipments = data;
         this.shipmentsLoading = false;
@@ -1224,7 +1227,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   advanceShipment(shipment: RealShipment) {
     this.advancingShipmentId = shipment.id;
-    this.http.post<any>(`http://localhost:3000/api/shipments/${shipment.id}/advance`, {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/${shipment.id}/advance`, {}).subscribe({
       next: (res) => {
         this.showToast(res.message || 'Route updated successfully');
         this.advancingShipmentId = '';
@@ -1249,7 +1252,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   syncShipmentWithShopify(shipment: RealShipment) {
     this.syncingShipmentId = shipment.id;
-    this.http.post<any>(`http://localhost:3000/api/shipments/${shipment.id}/sync-shopify`, {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/${shipment.id}/sync-shopify`, {}).subscribe({
       next: (res) => {
         this.syncingShipmentId = '';
         this.showToast(res.message || 'Synced with Shopify API');
@@ -1274,7 +1277,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   syncAllWithShopify() {
     this.syncingWithShopify = true;
-    this.http.post<any>('http://localhost:3000/api/shipments/sync-shopify-all', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/sync-shopify-all`, {}).subscribe({
       next: (res) => {
         this.syncingWithShopify = false;
         this.showToast(res.message || 'Shipments synced with Shopify API');
@@ -1290,7 +1293,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   toggleAutoDispatch() {
-    this.http.post<any>('http://localhost:3000/api/shipments/auto-engine/toggle', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/auto-engine/toggle`, {}).subscribe({
       next: (res) => {
         this.autoDispatchActive = res.active;
         this.showToast(res.message);
@@ -1301,7 +1304,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   bulkAdvanceShipments() {
     this.bulkDispatching = true;
-    this.http.post<any>('http://localhost:3000/api/shipments/batch-advance', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/batch-advance`, {}).subscribe({
       next: (res) => {
         this.bulkDispatching = false;
         this.showToast(res.message);
@@ -1317,7 +1320,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   simulateHighVolumeBatch(count: number = 20) {
     this.simulatingBatch = true;
-    this.http.post<any>('http://localhost:3000/api/orders/simulate-batch', { count }).subscribe({
+    this.http.post<any>(`${API_BASE}/api/orders/simulate-batch`, { count }).subscribe({
       next: (res) => {
         this.simulatingBatch = false;
         this.showToast(res.message);
@@ -1470,7 +1473,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   executeClearShipmentsTable() {
     this.clearingTable = true;
-    this.http.post<any>('http://localhost:3000/api/shipments/clear-all', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/clear-all`, {}).subscribe({
       next: (res) => {
         this.clearingTable = false;
         this.realShipments = [];
@@ -1492,7 +1495,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   purgeRetentionOldShipments(days: number = 60) {
     this.purgingRetention = true;
-    this.http.post<any>('http://localhost:3000/api/shipments/retention/purge', { days }).subscribe({
+    this.http.post<any>(`${API_BASE}/api/shipments/retention/purge`, { days }).subscribe({
       next: (res) => {
         this.purgingRetention = false;
         this.showToast(res.message);
@@ -1515,7 +1518,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   savingShopifyToken: boolean = false;
 
   loadShopifyStatus() {
-    this.http.get<any>('http://localhost:3000/api/v1/shopify/status').subscribe({
+    this.http.get<any>(`${API_BASE}/api/v1/shopify/status`).subscribe({
       next: (res) => { this.shopifyStatus = res; },
       error: (err) => console.error('Error loading Shopify status:', err)
     });
@@ -1527,7 +1530,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
     this.savingShopifyToken = true;
-    this.http.post<any>('http://localhost:3000/api/v1/shopify/configure', {
+    this.http.post<any>(`${API_BASE}/api/v1/shopify/configure`, {
       accessToken: this.shopifyAdminToken.trim()
     }).subscribe({
       next: (res) => {
@@ -1544,7 +1547,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   testShopifyApiConnection() {
     this.testingShopifyApi = true;
-    this.http.post<any>('http://localhost:3000/api/v1/shopify/test-connection', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/v1/shopify/test-connection`, {}).subscribe({
       next: (res) => {
         this.testingShopifyApi = false;
         if (res.success) {
@@ -1562,7 +1565,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   syncShopifyOrdersNow() {
     this.syncingShopifyApi = true;
-    this.http.post<any>('http://localhost:3000/api/v1/shopify/sync-now', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/v1/shopify/sync-now`, {}).subscribe({
       next: (res) => {
         this.syncingShopifyApi = false;
         if (res.success) {
@@ -1681,7 +1684,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadPurchaseOrders() {
     this.purchaseOrdersLoading = true;
-    this.http.get<PurchaseOrder[]>('http://localhost:3000/api/purchase-orders').subscribe({
+    this.http.get<PurchaseOrder[]>(`${API_BASE}/api/purchase-orders`).subscribe({
       next: (data) => {
         this.purchaseOrders = data;
         this.purchaseOrdersLoading = false;
@@ -1753,7 +1756,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     this.restockLoading = true;
-    this.http.post<any>(`http://localhost:3000/api/suppliers/${this.restockSupplier.id}/order`, {
+    this.http.post<any>(`${API_BASE}/api/suppliers/${this.restockSupplier.id}/order`, {
       sku: this.restockSelectedSku,
       units: this.restockUnits
     }).subscribe({
@@ -1815,7 +1818,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.supplierSaving = true;
     if (this.editingSupplier) {
-      this.http.put<Supplier>(`http://localhost:3000/api/suppliers/${this.editingSupplier.id}`, this.supplierForm).subscribe({
+      this.http.put<Supplier>(`${API_BASE}/api/suppliers/${this.editingSupplier.id}`, this.supplierForm).subscribe({
         next: (updated) => {
           this.supplierSaving = false;
           this.closeSupplierModal();
@@ -1829,7 +1832,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      this.http.post<Supplier>('http://localhost:3000/api/suppliers', this.supplierForm).subscribe({
+      this.http.post<Supplier>(`${API_BASE}/api/suppliers`, this.supplierForm).subscribe({
         next: (created) => {
           this.supplierSaving = false;
           this.closeSupplierModal();
@@ -1847,7 +1850,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   deleteSupplier(supplier: Supplier) {
     if (!confirm(`Are you sure you want to delete supplier "${supplier.name}"?`)) return;
-    this.http.delete<any>(`http://localhost:3000/api/suppliers/${supplier.id}`).subscribe({
+    this.http.delete<any>(`${API_BASE}/api/suppliers/${supplier.id}`).subscribe({
       next: (res) => {
         this.showToast(res.message || 'Supplier deleted.');
         this.loadSuppliers();
@@ -1861,7 +1864,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadUsers() {
     this.usersLoading = true;
-    this.http.get<any[]>('http://localhost:3000/api/users').subscribe({
+    this.http.get<any[]>(`${API_BASE}/api/users`).subscribe({
       next: (data) => {
         this.systemUsers = data;
         this.usersLoading = false;
@@ -1948,7 +1951,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-    this.http.post<any>('http://localhost:3000/api/users', {
+    this.http.post<any>(`${API_BASE}/api/users`, {
       email: this.newEmail.trim(),
       password: this.newPassword.trim(),
       role: this.newRole,
@@ -1981,7 +1984,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-    this.http.put<any>(`http://localhost:3000/api/users/${user.id}`, {
+    this.http.put<any>(`${API_BASE}/api/users/${user.id}`, {
       role: newRole,
       requesterRole: this.currentRole
     }, { headers }).subscribe({
@@ -2024,7 +2027,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-    this.http.put<any>(`http://localhost:3000/api/users/${this.resetPasswordUser.id}`, {
+    this.http.put<any>(`${API_BASE}/api/users/${this.resetPasswordUser.id}`, {
       password: this.resetNewPassword.trim(),
       requesterRole: this.currentRole
     }, { headers }).subscribe({
@@ -2067,7 +2070,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-    this.http.delete<any>(`http://localhost:3000/api/users/${this.deletingUser.id}`, {
+    this.http.delete<any>(`${API_BASE}/api/users/${this.deletingUser.id}`, {
       headers,
       body: { requesterRole: this.currentRole }
     }).subscribe({
@@ -2247,7 +2250,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadInitialOrders() {
-    this.http.get<any[]>('http://localhost:3000/api/orders').subscribe({
+    this.http.get<any[]>(`${API_BASE}/api/orders`).subscribe({
       next: (data) => {
         this.orders = data.map((o) => ({
           ...o,
@@ -2273,7 +2276,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadInventory() {
     this.inventoryLoading = true;
-    this.http.get<InventoryItem[]>('http://localhost:3000/api/inventory').subscribe({
+    this.http.get<InventoryItem[]>(`${API_BASE}/api/inventory`).subscribe({
       next: (items) => {
         this.inventoryItems = items;
         this.inventoryLoading = false;
@@ -2285,7 +2288,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   restockProduct(sku: string, amount: number) {
-    this.http.post('http://localhost:3000/api/inventory/restock', { sku, amount }).subscribe({
+    this.http.post(`${API_BASE}/api/inventory/restock`, { sku, amount }).subscribe({
       next: () => {
         this.showToast(`Restocked ${amount} units for ${sku}`);
         this.loadInventory();
@@ -2296,7 +2299,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadCustomers() {
     this.customersLoading = true;
-    this.http.get<CustomerRecord[]>('http://localhost:3000/api/customers').subscribe({
+    this.http.get<CustomerRecord[]>(`${API_BASE}/api/customers`).subscribe({
       next: (records) => {
         this.customers = records;
         this.customersLoading = false;
@@ -2427,7 +2430,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Texas Data Privacy and Security Act (TDPSA) Handlers
   exportCustomerTdpsa(customer: any) {
-    this.http.get(`http://localhost:3000/api/customers/${customer.id}/export`).subscribe({
+    this.http.get(`${API_BASE}/api/customers/${customer.id}/export`).subscribe({
       next: (data: any) => {
         const jsonStr = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -2449,7 +2452,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!confirm(`¿Ejercer Derecho al Olvido (TDPSA Sec. 541.051)? Se anonimizarán de forma permanente el nombre, dirección y teléfono de "${customer.full_name || customer.decrypted_name}".`)) {
       return;
     }
-    this.http.post<any>(`http://localhost:3000/api/customers/${customer.id}/anonymize`, {
+    this.http.post<any>(`${API_BASE}/api/customers/${customer.id}/anonymize`, {
       actorEmail: this.currentUserEmail,
       reason: 'TDPSA Consumer Right to Erasure Request'
     }).subscribe({
@@ -2470,7 +2473,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loadHealth() {
     this.devopsLoading = true;
-    this.http.get<any>('http://localhost:3000/api/devops/telemetry').subscribe({
+    this.http.get<any>(`${API_BASE}/api/devops/telemetry`).subscribe({
       next: (res) => {
         this.devopsTelemetry = res;
         this.systemUptime = Math.floor(res.system?.uptimeSeconds || 0);
@@ -2487,7 +2490,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDevopsLogs() {
-    this.http.get<any[]>(`http://localhost:3000/api/devops/logs?level=${this.devopsLogFilter}`).subscribe({
+    this.http.get<any[]>(`${API_BASE}/api/devops/logs?level=${this.devopsLogFilter}`).subscribe({
       next: (logs) => {
         this.devopsLogs = logs;
       },
@@ -2496,7 +2499,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadPrometheusMetrics() {
-    this.http.get('http://localhost:3000/metrics', { responseType: 'text' }).subscribe({
+    this.http.get(`${API_BASE}/metrics`, { responseType: 'text' }).subscribe({
       next: (metrics) => {
         this.devopsPrometheusMetricsRaw = metrics;
       },
@@ -2506,7 +2509,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   pingDatabaseNow() {
     this.devopsPingLoading = true;
-    this.http.post<any>('http://localhost:3000/api/devops/ping-db', {}).subscribe({
+    this.http.post<any>(`${API_BASE}/api/devops/ping-db`, {}).subscribe({
       next: (res) => {
         this.devopsPingLoading = false;
         if (this.devopsTelemetry && this.devopsTelemetry.database) {
@@ -2596,7 +2599,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadProductTypes() {
-    this.http.get<string[]>('http://localhost:3000/api/inventory/types').subscribe({
+    this.http.get<string[]>(`${API_BASE}/api/inventory/types`).subscribe({
       next: (types) => {
         if (types && types.length > 0) {
           this.productTypes = types;
@@ -2623,7 +2626,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
     this.creatingType = true;
-    this.http.post<any>('http://localhost:3000/api/inventory/types', {
+    this.http.post<any>(`${API_BASE}/api/inventory/types`, {
       name: this.newTypeName.trim()
     }).subscribe({
       next: (res) => {
@@ -2710,7 +2713,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       product_type: this.newProdType || 'Electronics'
     };
 
-    this.http.post<any>('http://localhost:3000/api/inventory', payload).subscribe({
+    this.http.post<any>(`${API_BASE}/api/inventory`, payload).subscribe({
       next: (res) => {
         this.publishingProduct = false;
         this.closeRegisterProductModal();
@@ -2801,7 +2804,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       product_type: this.editProdType || 'Electronics'
     };
 
-    this.http.put<any>(`http://localhost:3000/api/inventory/${encodeURIComponent(this.editProdSku)}`, payload).subscribe({
+    this.http.put<any>(`${API_BASE}/api/inventory/${encodeURIComponent(this.editProdSku)}`, payload).subscribe({
       next: (res) => {
         this.savingEditedProduct = false;
         this.closeEditProductModal();
@@ -2843,7 +2846,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const sku = this.deletingProduct.sku;
     this.deletingProductLoading = true;
 
-    this.http.delete<any>(`http://localhost:3000/api/inventory/${encodeURIComponent(sku)}`).subscribe({
+    this.http.delete<any>(`${API_BASE}/api/inventory/${encodeURIComponent(sku)}`).subscribe({
       next: (res) => {
         this.deletingProductLoading = false;
         this.closeDeleteProductModal();
@@ -2870,8 +2873,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.isSimulating = true;
     const orderNum = Math.floor(1000 + Math.random() * 9000);
     const endpoint = channel === 'Shopify'
-      ? 'http://localhost:3000/api/v1/webhooks/shopify'
-      : 'http://localhost:3000/api/v1/webhooks/amazon';
+      ? `${API_BASE}/api/v1/webhooks/shopify`
+      : `${API_BASE}/api/v1/webhooks/amazon`;
 
     // Pick an existing inventory product dynamically so stock is visibly deducted!
     const chosen = this.inventoryItems.length > 0

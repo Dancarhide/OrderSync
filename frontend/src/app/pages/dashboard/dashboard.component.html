@@ -4519,7 +4519,7 @@
                 <p class="text-xs text-slate-500 mt-0.5">Exposición estándar en formato RFC 0.0.4 para scraping por Prometheus, Datadog o Grafana Agent</p>
               </div>
               <a
-                href="http://localhost:3000/metrics"
+                [href]="apiBase + '/metrics'"
                 target="_blank"
                 class="btn-formal-secondary px-2.5 py-1 text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800"
               >
@@ -4530,7 +4530,7 @@
               </a>
             </div>
 
-            <pre class="bg-slate-950 text-emerald-400 rounded-lg p-4 font-mono text-xs max-h-96 overflow-y-auto whitespace-pre-wrap select-all shadow-inner">{{ devopsPrometheusMetricsRaw || 'Loading metrics from http://localhost:3000/metrics...' }}</pre>
+            <pre class="bg-slate-950 text-emerald-400 rounded-lg p-4 font-mono text-xs max-h-96 overflow-y-auto whitespace-pre-wrap select-all shadow-inner">{{ devopsPrometheusMetricsRaw || 'Loading metrics from ' + apiBase + '/metrics...' }}</pre>
           </div>
         </div>
       </section>
