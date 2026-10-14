@@ -20,10 +20,7 @@
         </div>
 
         <div class="field">
-          <div class="field-label-row">
-            <label for="password">Password</label>
-            <a class="link-muted" href="#" (click)="$event.preventDefault()">Forgot your password?</a>
-          </div>
+          <label for="password">Password</label>
           <div class="password-wrap">
             <input id="password" name="password" [type]="showPassword ? 'text' : 'password'"
               autocomplete="current-password" placeholder="••••••••" [(ngModel)]="password" [disabled]="loading" />
