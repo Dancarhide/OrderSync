@@ -1766,41 +1766,41 @@
       </section>
 
       <!-- ========================================================================= -->
-      <!-- MODULE 2: CANALES DE VENTA (Shopify & Amazon SP-API) -->
+      <!-- MODULE 2: CANALES DE VENTA (Shopify Store & Admin API) -->
       <!-- ========================================================================= -->
       <section *ngIf="activeModule === 'channels'" class="space-y-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="max-w-3xl">
           <!-- Shopify Card (Official Store & Admin API) -->
-          <div class="formal-card p-5 space-y-4">
+          <div class="formal-card p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
                   <span>Shopify Store & Admin API</span>
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 </h3>
                 <p class="text-xs text-slate-500 font-mono mt-0.5">ordersync-ygnacmly.myshopify.com</p>
               </div>
-              <span class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                 100% Connected
               </span>
             </div>
 
-            <div class="bg-slate-50 rounded p-3 text-xs space-y-2.5 border border-slate-200">
+            <div class="bg-slate-50 rounded-lg p-3.5 text-xs space-y-2.5 border border-slate-200">
               <div class="flex justify-between items-center">
-                <span class="text-slate-500">Official Store:</span>
+                <span class="text-slate-500 font-medium">Official Store:</span>
                 <span class="font-mono font-bold text-slate-900">ordersync-ygnacmly.myshopify.com</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-slate-500">API Version:</span>
+                <span class="text-slate-500 font-medium">API Version:</span>
                 <span class="font-mono font-semibold text-slate-800">2024-01 (Admin REST)</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-slate-500">Webhook Ingestion:</span>
+                <span class="text-slate-500 font-medium">Webhook Ingestion:</span>
                 <span class="font-mono text-emerald-700 font-bold">Active (HMAC SHA-256)</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-slate-500">Synced Events:</span>
-                <span class="font-mono text-slate-700 text-[11px]">orders/create, fulfillments</span>
+                <span class="text-slate-500 font-medium">Synced Events:</span>
+                <span class="font-mono text-slate-700 text-[11px]">orders/create, fulfillments, refunds</span>
               </div>
             </div>
 
@@ -1820,7 +1820,7 @@
                   type="button"
                   (click)="saveShopifyAdminToken()"
                   [disabled]="savingShopifyToken || !shopifyAdminToken"
-                  class="btn-formal-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+                  class="btn-formal-secondary px-4 py-1.5 text-xs font-semibold disabled:opacity-40"
                 >
                   {{ savingShopifyToken ? 'Saving...' : 'Save' }}
                 </button>
@@ -1831,12 +1831,12 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
+            <div class="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 (click)="testShopifyApiConnection()"
                 [disabled]="testingShopifyApi"
-                class="btn-formal-secondary text-xs py-2 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
+                class="btn-formal-secondary text-xs py-2.5 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <svg *ngIf="testingShopifyApi" class="animate-spin w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1849,7 +1849,7 @@
                 type="button"
                 (click)="syncShopifyOrdersNow()"
                 [disabled]="syncingShopifyApi"
-                class="btn-formal-primary text-xs py-2 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
+                class="btn-formal-primary text-xs py-2.5 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <svg *ngIf="syncingShopifyApi" class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1858,43 +1858,6 @@
                 <span>{{ syncingShopifyApi ? 'Syncing...' : 'Sync Orders Now' }}</span>
               </button>
             </div>
-          </div>
-
-          <!-- Amazon SP-API Card -->
-          <div class="formal-card p-5 space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 class="text-sm font-semibold text-slate-900">Amazon SP-API</h3>
-                <p class="text-xs text-slate-500 font-mono mt-0.5">Selling Partner API (US Region)</p>
-              </div>
-              <span class="px-2 py-0.5 text-xs font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {{ t.statusReady }}
-              </span>
-            </div>
-
-            <div class="bg-slate-50 rounded p-3 text-xs space-y-2 border border-slate-200">
-              <div class="flex justify-between">
-                <span class="text-slate-500">{{ t.endpointLabel }}</span>
-                <span class="font-mono font-semibold text-slate-800">/api/v1/webhooks/amazon</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-500">{{ t.dedupLabel }}</span>
-                <span class="font-mono font-semibold text-slate-800">100% Idempotent</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-500">{{ t.dbSyncLabel }}</span>
-                <span class="font-mono text-slate-600">Atomic Postgres Commits</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              (click)="triggerSimulatedPurchase('Amazon')"
-              [disabled]="isSimulating"
-              class="btn-formal-secondary w-full"
-            >
-              <span>{{ t.simulateAmazonBtn }}</span>
-            </button>
           </div>
         </div>
       </section>
