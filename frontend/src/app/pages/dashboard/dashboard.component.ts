@@ -2682,7 +2682,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.publishingProduct = false;
         this.closeRegisterProductModal();
         if (res.shopify_product_id) {
-          this.showToast(`Product ${res.sku} published directly to Shopify Store (ID: ${res.shopify_product_id})!`);
+          this.showToast(`✅ Product ${res.sku} published directly to Shopify Store (ID: ${res.shopify_product_id})!`);
+        } else if (res.shopifySyncStatus === 'failed') {
+          this.showToast(`⚠️ Saved to local inventory. Shopify: ${res.shopifyMessage}`);
         } else {
           this.showToast(`Product ${res.sku} registered in Central Inventory`);
         }

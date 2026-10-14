@@ -5843,35 +5843,17 @@
       <!-- Publishing Channel Selector -->
       <div>
         <label class="block font-semibold text-slate-700 mb-1.5">Publishing Channel</label>
-        <div class="grid grid-cols-2 gap-2.5">
-          <!-- Shopify (Active & Selected) -->
-          <div
-            (click)="newProdChannel = 'Shopify'"
-            class="border rounded p-2.5 cursor-pointer transition-all flex items-center justify-between"
-            [ngClass]="newProdChannel === 'Shopify' ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-300 bg-white'"
-          >
+        <div class="border rounded-lg p-3 bg-slate-50 border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <div>
-              <span class="font-bold text-slate-900 block leading-tight">Shopify Store</span>
-              <span class="text-[10px] text-slate-500 block">Live REST catalog sync</span>
+              <span class="font-bold text-slate-900 block leading-tight">Shopify Store & Admin API</span>
+              <span class="text-[11px] text-slate-500 block font-mono">ordersync-ygnacmly.myshopify.com</span>
             </div>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Connected
-            </span>
           </div>
-
-          <!-- Amazon (Coming Soon) -->
-          <div
-            class="border border-slate-200 rounded p-2.5 opacity-50 cursor-not-allowed bg-slate-50 flex items-center justify-between"
-            title="Amazon SP-API integration scheduled for next release"
-          >
-            <div>
-              <span class="font-bold text-slate-700 block leading-tight">Amazon Marketplace</span>
-              <span class="text-[10px] text-slate-400 block">SP-API sync</span>
-            </div>
-            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 text-slate-600">
-              Soon
-            </span>
-          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            Live REST Sync
+          </span>
         </div>
       </div>
 
