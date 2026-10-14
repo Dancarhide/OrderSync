@@ -688,35 +688,6 @@ const initDbTables = async () => {
           ('KMS_AUDIT_VERIFIED', 'admin@ordersync.app', 'KMS', '{"algorithm": "AES-256-GCM", "keyLength": 256}'::jsonb);
       `);
     }
-    // Seed initial return records if empty
-    const existingReturns = await pool.query('SELECT id FROM returns LIMIT 1');
-    if (existingReturns.rows.length === 0) {
-      await pool.query(`
-        INSERT INTO returns (
-          return_number, external_order_id, channel, customer_name, sku,
-          product_name, quantity, refund_amount, currency, reason,
-          status, restock_inventory, tracking_number, notes
-        ) VALUES 
-          ('RET-2026-4821', '#1005', 'Shopify', $1, 'SKU-50782439047397', $2, 1, 749.95, 'USD', 'DEFECTIVE', 'requested', true, $3, $4),
-          ('RET-2026-3892', '#1004', 'Shopify', $5, 'SKU-50782439014629', $6, 1, 699.95, 'USD', 'SIZE_FIT', 'approved', true, $7, $8),
-          ('RET-2026-1104', '#1002', 'Amazon', $9, 'SKU-1002', $10, 1, 49.99, 'USD', 'NOT_AS_DESCRIBED', 'received_restocked', true, $11, $12);
-      `, [
-        EncryptionService.encryptString('Mauricio Garro Rodríguez'),
-        EncryptionService.encryptString('Premium Smart Soundbar Pro'),
-        EncryptionService.encryptString('DHL-RET-9421'),
-        EncryptionService.encryptString('Cliente reporta falla de alimentación en el subwoofer inalámbrico.'),
-
-        EncryptionService.encryptString('Carlos Daniel Ocegueda'),
-        EncryptionService.encryptString('Noise-Canceling Wireless Headphones'),
-        EncryptionService.encryptString('DHL-RET-7120'),
-        EncryptionService.encryptString('Guía autorizada. En tránsito a bodega para inspección física.'),
-
-        EncryptionService.encryptString('Sofia Valenzuela'),
-        EncryptionService.encryptString('Wireless Mouse Pro'),
-        EncryptionService.encryptString('TBA-RET-3301'),
-        EncryptionService.encryptString('Inspeccionado, reingresado a inventario y reembolso acreditado.')
-      ]);
-    }
     console.log('Database tables (purchase_orders, returns, security_audit_logs) ready.');
   } catch (err) {
     console.error('Error ensuring database tables:', err);
@@ -1614,51 +1585,7 @@ app.post('/api/returns/:id/process', async (req, res) => {
   }
 });
 
-// Seed Initial / Demo Returns on Demand
-app.post('/api/returns/seed', async (_req, res) => {
-  try {
-    await pool.query("DELETE FROM returns WHERE return_number LIKE 'RET-2026-%'");
-    const seedRes = await pool.query(`
-      INSERT INTO returns (
-        return_number, external_order_id, channel, customer_name, sku,
-        product_name, quantity, refund_amount, currency, reason,
-        status, restock_inventory, tracking_number, notes
-      ) VALUES 
-        ('RET-2026-4821', '#1005', 'Shopify', $1, 'SKU-50782439047397', $2, 1, 749.95, 'USD', 'DEFECTIVE', 'requested', true, $3, $4),
-        ('RET-2026-3892', '#1004', 'Shopify', $5, 'SKU-50782439014629', $6, 1, 699.95, 'USD', 'SIZE_FIT', 'approved', true, $7, $8),
-        ('RET-2026-1104', '#1002', 'Amazon', $9, 'SKU-1002', $10, 1, 49.99, 'USD', 'NOT_AS_DESCRIBED', 'received_restocked', true, $11, $12)
-      RETURNING *;
-    `, [
-      EncryptionService.encryptString('Mauricio Garro Rodríguez'),
-      EncryptionService.encryptString('Premium Smart Soundbar Pro'),
-      EncryptionService.encryptString('DHL-RET-9421'),
-      EncryptionService.encryptString('Cliente reporta falla de alimentación en el subwoofer inalámbrico.'),
 
-      EncryptionService.encryptString('Carlos Daniel Ocegueda'),
-      EncryptionService.encryptString('Noise-Canceling Wireless Headphones'),
-      EncryptionService.encryptString('DHL-RET-7120'),
-      EncryptionService.encryptString('Guía autorizada. En tránsito a bodega para inspección física.'),
-
-      EncryptionService.encryptString('Sofia Valenzuela'),
-      EncryptionService.encryptString('Wireless Mouse Pro'),
-      EncryptionService.encryptString('TBA-RET-3301'),
-      EncryptionService.encryptString('Inspeccionado, reingresado a inventario y reembolso acreditado.')
-    ]);
-
-    const decrypted = seedRes.rows.map(r => ({
-      ...r,
-      customer_name: EncryptionService.decryptString(r.customer_name),
-      product_name: EncryptionService.decryptString(r.product_name),
-      notes: EncryptionService.decryptString(r.notes),
-      tracking_number: EncryptionService.decryptString(r.tracking_number)
-    }));
-
-    io.emit('BATCH_SYNC_COMPLETED', {});
-    res.json({ message: 'Returns seeded successfully', returns: decrypted });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Delete a return record
 app.delete('/api/returns/:id', async (req, res) => {
