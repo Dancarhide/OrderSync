@@ -65,10 +65,12 @@ const authLimiter = rateLimit({
 // Middleware with rawBody preservation for exact HMAC verification
 app.use(cors());
 app.use(express.json({
+  limit: '50mb',
   verify: (req: any, _res, buf) => {
     req.rawBody = buf.toString('utf8');
   }
 }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.post('/api/login', authLimiter, login);
