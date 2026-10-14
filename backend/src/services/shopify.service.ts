@@ -300,4 +300,101 @@ export class ShopifyService {
       };
     }
   }
+
+  /**
+   * Updates an existing product in Shopify via Admin REST API
+   */
+  public static async updateProductInShopify(
+    shopifyProductId: string,
+    productData: {
+      title?: string;
+      description?: string;
+      vendor?: string;
+      price?: number;
+      product_type?: string;
+      image_url?: string;
+    }
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    const domain = this.getShopDomain();
+    const token = this.getAccessToken();
+
+    if (!token) {
+      return { success: false, error: 'Missing SHOPIFY_ADMIN_ACCESS_TOKEN' };
+    }
+
+    try {
+      const url = `https://${domain}/admin/api/${this.getApiVersion()}/products/${shopifyProductId}.json`;
+      const productPayload: any = {};
+      if (productData.title) productPayload.title = productData.title;
+      if (productData.description !== undefined) productPayload.body_html = productData.description;
+      if (productData.vendor) productPayload.vendor = productData.vendor;
+      if (productData.product_type) productPayload.product_type = productData.product_type;
+
+      if (productData.price !== undefined) {
+        productPayload.variants = [{ price: productData.price.toFixed(2) }];
+      }
+
+      if (productData.image_url) {
+        if (productData.image_url.startsWith('data:image')) {
+          const base64Data = productData.image_url.split('base64,')[1];
+          if (base64Data) {
+            productPayload.images = [{ attachment: base64Data }];
+          }
+        } else if (productData.image_url.startsWith('http://') || productData.image_url.startsWith('https://')) {
+          productPayload.images = [{ src: productData.image_url }];
+        }
+      }
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'X-Shopify-Access-Token': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ product: productPayload })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        return { success: false, error: `Shopify responded with HTTP ${res.status}: ${errText}` };
+      }
+
+      const json: any = await res.json();
+      return { success: true, data: json.product };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error updating product in Shopify' };
+    }
+  }
+
+  /**
+   * Deletes a product from Shopify via Admin REST API
+   */
+  public static async deleteProductInShopify(shopifyProductId: string): Promise<{ success: boolean; error?: string }> {
+    const domain = this.getShopDomain();
+    const token = this.getAccessToken();
+
+    if (!token) {
+      return { success: false, error: 'Missing SHOPIFY_ADMIN_ACCESS_TOKEN' };
+    }
+
+    try {
+      const url = `https://${domain}/admin/api/${this.getApiVersion()}/products/${shopifyProductId}.json`;
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'X-Shopify-Access-Token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok && res.status !== 404) {
+        const errText = await res.text();
+        return { success: false, error: `Shopify responded with HTTP ${res.status}: ${errText}` };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Error deleting product from Shopify' };
+    }
+  }
 }

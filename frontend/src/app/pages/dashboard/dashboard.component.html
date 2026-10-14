@@ -2080,19 +2080,47 @@
                       {{ item.stock_quantity > 0 ? t.invAvailable : t.invOutOfStock }}
                     </span>
                   </td>
-                  <td class="text-right pt-3">
-                    <!-- Restock Button Only (Removed +20 units) -->
-                    <button
-                      type="button"
-                      (click)="openRestockModal(undefined, item.sku, 25)"
-                      class="btn-formal-primary px-3 py-1.5 text-xs inline-flex items-center gap-1.5 shadow-2xs"
-                      title="Initiate restock purchase order with supplier"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                      </svg>
-                      <span>Restock</span>
-                    </button>
+                  <td class="text-right pt-3 whitespace-nowrap">
+                    <div class="inline-flex items-center justify-end gap-1.5">
+                      <!-- Restock Button -->
+                      <button
+                        type="button"
+                        (click)="openRestockModal(undefined, item.sku, 25)"
+                        class="btn-formal-primary px-2.5 py-1 text-xs inline-flex items-center gap-1 shadow-2xs"
+                        title="Initiate restock purchase order with supplier"
+                      >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                        <span>Restock</span>
+                      </button>
+
+                      <!-- Edit Button -->
+                      <button
+                        type="button"
+                        (click)="openEditProductModal(item)"
+                        class="px-2.5 py-1 text-xs font-semibold rounded border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 inline-flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Edit product details, price, and stock"
+                      >
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span>Edit</span>
+                      </button>
+
+                      <!-- Delete Button -->
+                      <button
+                        type="button"
+                        (click)="openDeleteProductModal(item)"
+                        class="px-2 py-1 text-xs font-semibold rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 inline-flex items-center gap-1 transition-colors shadow-2xs"
+                        title="Delete product from inventory"
+                      >
+                        <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -2152,7 +2180,7 @@
                 </p>
               </div>
 
-              <!-- Bottom Metrics & Restock Button -->
+              <!-- Bottom Metrics & Action Buttons -->
               <div class="pt-3 border-t border-slate-100 mt-2 space-y-3">
                 <div class="flex items-center justify-between text-xs">
                   <div>
@@ -2165,17 +2193,44 @@
                   </div>
                 </div>
 
-                <!-- Single Restock Button -->
-                <button
-                  type="button"
-                  (click)="openRestockModal(undefined, item.sku, 25)"
-                  class="btn-formal-primary w-full py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                  </svg>
-                  <span>Restock</span>
-                </button>
+                <!-- Action Buttons: Restock, Edit, Delete -->
+                <div class="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    (click)="openRestockModal(undefined, item.sku, 25)"
+                    class="btn-formal-primary py-1.5 text-xs font-semibold flex items-center justify-center gap-1 shadow-2xs"
+                    title="Restock units"
+                  >
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Restock</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openEditProductModal(item)"
+                    class="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 py-1.5 text-xs font-semibold rounded flex items-center justify-center gap-1 shadow-2xs transition-colors"
+                    title="Edit Product"
+                  >
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openDeleteProductModal(item)"
+                    class="border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 py-1.5 text-xs font-semibold rounded flex items-center justify-center gap-1 shadow-2xs transition-colors"
+                    title="Delete Product"
+                  >
+                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -6124,6 +6179,325 @@
         <span>{{ creatingType ? 'Adding...' : 'Save Type' }}</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Product Details & Sync with Shopify -->
+<div *ngIf="showEditProductModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+    
+    <!-- Modal Header (Clean Light Formal Header) -->
+    <div class="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 tracking-tight">Edit Product</h3>
+        <p class="text-xs text-slate-500 mt-0.5">
+          SKU: <span class="font-mono font-bold text-slate-800">{{ editProdSku }}</span>
+          <span *ngIf="editingProduct?.shopify_product_id" class="text-emerald-600 font-medium ml-2">● Synced with Shopify Store</span>
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="closeEditProductModal()"
+        class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        title="Close"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Form Body (Scrollable Container) -->
+    <form (ngSubmit)="saveEditedProduct()" class="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
+      
+      <!-- Product Channel / Shopify Sync Info -->
+      <div *ngIf="editingProduct?.shopify_product_id" class="border rounded-lg p-3 bg-slate-50 border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <div>
+            <span class="font-bold text-slate-900 block leading-tight">Connected Shopify Product</span>
+            <span class="text-[11px] text-slate-500 block font-mono">Shopify ID: {{ editingProduct?.shopify_product_id }}</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          Auto-Sync on Save
+        </span>
+      </div>
+
+      <!-- Product Media / Photo -->
+      <div class="p-3 bg-slate-50 rounded border border-slate-200 space-y-2">
+        <label class="block font-semibold text-slate-700">Product Image / Media</label>
+        <div class="flex items-center gap-3">
+          <!-- Preview Box -->
+          <div class="w-14 h-14 rounded border border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0 relative group">
+            <img
+              *ngIf="editProdImagePreview"
+              [src]="editProdImagePreview"
+              alt="Preview"
+              class="w-full h-full object-cover"
+            />
+            <svg *ngIf="!editProdImagePreview" class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <button
+              *ngIf="editProdImagePreview"
+              type="button"
+              (click)="clearEditProductImage()"
+              class="absolute inset-0 bg-slate-900/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Remove image"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- URL Input and Upload Button -->
+          <div class="flex-1 space-y-1.5 min-w-0">
+            <input
+              type="url"
+              [(ngModel)]="editProdImageUrl"
+              (ngModelChange)="onEditProductImageUrlChange()"
+              name="editProdImageUrl"
+              placeholder="Paste image URL (https://...)"
+              class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+            />
+            <div class="flex items-center gap-2">
+              <label class="btn-formal-secondary px-2.5 py-1 text-xs cursor-pointer inline-flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                <span>Upload New File</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  (change)="onEditProductImageSelected($event)"
+                  class="hidden"
+                />
+              </label>
+              <span class="text-[10px] text-slate-500">Supports PNG, JPG, WebP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Basic Fields Grid (2 columns) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Product Title / Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="editProdName"
+            name="editProdName"
+            placeholder="Product Name"
+            required
+            class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">SKU (Immutable Identifier)</label>
+          <input
+            type="text"
+            [value]="editProdSku"
+            disabled
+            class="w-full border border-slate-200 rounded p-2 text-xs bg-slate-100 text-slate-500 font-mono uppercase cursor-not-allowed"
+          />
+        </div>
+      </div>
+
+      <!-- Product Type & Assigned Supplier -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Product Type / Category</label>
+          <select [(ngModel)]="editProdType" name="editProdType" class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-medium">
+            <option *ngFor="let t of productTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Assigned Supplier</label>
+          <select [(ngModel)]="editProdSupplier" name="editProdSupplier" class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-medium">
+            <option *ngFor="let s of suppliers" [value]="s.name">{{ s.name }}</option>
+            <option value="Apex Global Electronics">Apex Global Electronics</option>
+            <option value="Shenzhen Acoustic Labs">Shenzhen Acoustic Labs</option>
+            <option value="Nordic Ergonomic Gear">Nordic Ergonomic Gear</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Pricing & Stock Units Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Stock Units *</label>
+          <input
+            type="number"
+            [(ngModel)]="editProdStock"
+            name="editProdStock"
+            min="0"
+            required
+            class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Unit Cost ($)</label>
+          <input
+            type="number"
+            [(ngModel)]="editProdCost"
+            name="editProdCost"
+            step="0.01"
+            class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Retail Price ($) *</label>
+          <input
+            type="number"
+            [(ngModel)]="editProdPrice"
+            name="editProdPrice"
+            step="0.01"
+            required
+            class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
+          />
+        </div>
+      </div>
+
+      <!-- Description / HTML Body -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Product Description</label>
+        <textarea
+          [(ngModel)]="editProdDescription"
+          name="editProdDescription"
+          rows="2"
+          placeholder="Update product description and specifications..."
+          class="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+        ></textarea>
+      </div>
+
+      <!-- Margin Preview Bar -->
+      <div class="p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between text-xs">
+        <span class="text-slate-600 font-medium">Estimated Gross Margin:</span>
+        <span class="font-mono font-bold text-slate-900">
+          {{ editProdPrice > 0 ? (((editProdPrice - editProdCost) / editProdPrice) * 100).toFixed(1) + '%' : '0%' }}
+          <span class="text-slate-500 font-normal">({{ (editProdPrice - editProdCost) | currency:'USD' }} / unit)</span>
+        </span>
+      </div>
+
+      <!-- Hidden Submit Button for Enter Key -->
+      <div class="hidden">
+        <button type="submit" id="hiddenSubmitEditProductBtn"></button>
+      </div>
+    </form>
+
+    <!-- Modal Footer Actions (Fixed Bottom Bar) -->
+    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+      <button
+        type="button"
+        (click)="closeEditProductModal()"
+        [disabled]="savingEditedProduct"
+        class="btn-formal-secondary px-4 py-2 text-xs"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="saveEditedProduct()"
+        [disabled]="savingEditedProduct || !editProdName.trim()"
+        class="btn-formal-primary px-5 py-2 text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+      >
+        <svg *ngIf="savingEditedProduct" class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <svg *ngIf="!savingEditedProduct" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span>{{ savingEditedProduct ? 'Saving...' : 'Save Changes' }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Delete Product Confirmation -->
+<div *ngIf="showDeleteProductModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+  <div class="bg-white rounded-lg shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+    
+    <!-- Header -->
+    <div class="bg-white px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 tracking-tight">Delete Product</h3>
+          <p class="text-[11px] text-slate-500">Confirm permanent removal from inventory</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeDeleteProductModal()"
+        class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+        title="Close"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-5 space-y-3.5 text-xs">
+      <div class="p-3 bg-rose-50/60 rounded border border-rose-100 flex items-start gap-2.5">
+        <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="text-rose-900 leading-relaxed">
+          Are you sure you want to delete this product?
+          <div class="mt-2 font-mono font-bold text-slate-900 bg-white px-2 py-1.5 rounded border border-rose-200">
+            {{ deletingProduct?.sku }} — {{ deletingProduct?.product_name }}
+          </div>
+          <p *ngIf="deletingProduct?.shopify_product_id" class="mt-2 text-[11px] text-rose-700 font-medium">
+            ⚠️ This product is linked to Shopify (ID: {{ deletingProduct?.shopify_product_id }}). Deleting it will also remove it from your live Shopify store.
+          </p>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500 italic text-center">
+        This action cannot be undone. Current stock: <strong class="text-slate-700">{{ deletingProduct?.stock_quantity }} units</strong>.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeleteProductModal()"
+        [disabled]="deletingProductLoading"
+        class="btn-formal-secondary px-3.5 py-1.5 text-xs"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteProduct()"
+        [disabled]="deletingProductLoading"
+        class="px-4 py-1.5 text-xs font-semibold rounded bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-xs transition-colors"
+      >
+        <svg *ngIf="deletingProductLoading" class="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <svg *ngIf="!deletingProductLoading" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        <span>{{ deletingProductLoading ? 'Deleting...' : 'Delete Product' }}</span>
+      </button>
+    </div>
+
   </div>
 </div>
 

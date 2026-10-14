@@ -410,6 +410,158 @@ app.post('/api/inventory/restock', async (req, res) => {
   }
 });
 
+// Update Existing Inventory Product (with Real-time Shopify Sync if connected)
+app.put('/api/inventory/:sku', async (req, res) => {
+  const { sku } = req.params;
+  const {
+    product_name,
+    stock_quantity,
+    supplier_name,
+    unit_cost,
+    sale_price,
+    channel,
+    image_url,
+    description,
+    product_type
+  } = req.body;
+
+  try {
+    const existingResult = await pool.query('SELECT * FROM inventory WHERE sku = $1', [sku]);
+    if (existingResult.rows.length === 0) {
+      res.status(404).json({ error: `Product with SKU ${sku} not found` });
+      return;
+    }
+    const current = existingResult.rows[0];
+
+    let shopifySyncStatus: 'synced' | 'local_only' | 'failed' = 'local_only';
+    let shopifyMessage: string | null = null;
+
+    // If product has a linked Shopify Product ID, sync update to Shopify
+    if (current.shopify_product_id) {
+      const updateData: any = {};
+      if (product_name) updateData.title = product_name.trim();
+      if (description !== undefined) updateData.description = description;
+      if (supplier_name) updateData.vendor = supplier_name;
+      if (sale_price !== undefined) updateData.price = Number(sale_price);
+      if (product_type) updateData.product_type = product_type;
+      if (image_url) updateData.image_url = image_url;
+
+      const shopifyRes = await ShopifyService.updateProductInShopify(current.shopify_product_id, updateData);
+      if (shopifyRes.success) {
+        shopifySyncStatus = 'synced';
+        shopifyMessage = `Updated in Shopify Store (ID: ${current.shopify_product_id})`;
+      } else {
+        shopifySyncStatus = 'failed';
+        shopifyMessage = shopifyRes.error || 'Failed to sync update to Shopify';
+        console.warn(`[Inventory Edit -> Shopify] Error for SKU ${sku}:`, shopifyRes.error);
+      }
+    }
+
+    const finalName = product_name !== undefined ? product_name.trim() : current.product_name;
+    const finalStock = stock_quantity !== undefined ? Number(stock_quantity) : current.stock_quantity;
+    const finalSupplier = supplier_name !== undefined ? supplier_name : current.supplier_name;
+    const finalUnitCost = unit_cost !== undefined ? Number(unit_cost) : current.unit_cost;
+    const finalSalePrice = sale_price !== undefined ? Number(sale_price) : current.sale_price;
+    const finalImageUrl = image_url !== undefined ? image_url : current.image_url;
+    const finalProductType = product_type !== undefined ? product_type : current.product_type;
+    const finalChannel = channel !== undefined ? channel : current.channel;
+
+    const result = await pool.query(
+      `UPDATE inventory
+       SET product_name = $1,
+           stock_quantity = $2,
+           supplier_name = $3,
+           unit_cost = $4,
+           sale_price = $5,
+           image_url = $6,
+           product_type = $7,
+           channel = $8,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE sku = $9
+       RETURNING *`,
+      [
+        finalName,
+        finalStock,
+        finalSupplier,
+        finalUnitCost,
+        finalSalePrice,
+        finalImageUrl,
+        finalProductType,
+        finalChannel,
+        sku
+      ]
+    );
+
+    const updated = result.rows[0];
+
+    // Real-time broadcast
+    io.emit('inventory_updated', {
+      sku: updated.sku,
+      stock_quantity: updated.stock_quantity,
+      product: updated
+    });
+
+    res.json({
+      ...updated,
+      shopifySyncStatus,
+      shopifyMessage
+    });
+  } catch (error: any) {
+    console.error(`Error updating product ${sku}:`, error);
+    res.status(500).json({ error: error.message || 'Failed to update inventory product' });
+  }
+});
+
+// Delete Product from Inventory (and Shopify if linked)
+app.delete('/api/inventory/:sku', async (req, res) => {
+  const { sku } = req.params;
+
+  try {
+    const existingResult = await pool.query('SELECT * FROM inventory WHERE sku = $1', [sku]);
+    if (existingResult.rows.length === 0) {
+      res.status(404).json({ error: `Product with SKU ${sku} not found` });
+      return;
+    }
+    const current = existingResult.rows[0];
+
+    let shopifyDeleted = false;
+    let shopifyError: string | null = null;
+
+    if (current.shopify_product_id) {
+      const shopifyRes = await ShopifyService.deleteProductInShopify(current.shopify_product_id);
+      if (shopifyRes.success) {
+        shopifyDeleted = true;
+      } else {
+        shopifyError = shopifyRes.error || 'Failed to delete from Shopify';
+        console.warn(`[Inventory Delete -> Shopify] Error for SKU ${sku}:`, shopifyRes.error);
+      }
+    }
+
+    // Delete from database
+    await pool.query('DELETE FROM inventory WHERE sku = $1', [sku]);
+
+    // Audit log
+    await pool.query(
+      `INSERT INTO security_audit_logs (event_type, actor_email, resource_type, resource_id, details)
+       VALUES ('INVENTORY_DELETED', 'admin@ordersync.io', 'inventory', $1, $2)`,
+      [sku, JSON.stringify({ product_name: current.product_name, shopify_product_id: current.shopify_product_id, shopifyDeleted, shopifyError })]
+    );
+
+    // Broadcast real-time deletion
+    io.emit('inventory_deleted', { sku });
+
+    res.json({
+      success: true,
+      message: `Product ${sku} (${current.product_name}) deleted successfully`,
+      shopifyDeleted,
+      shopifyError
+    });
+  } catch (error: any) {
+    console.error(`Error deleting product ${sku}:`, error);
+    res.status(500).json({ error: error.message || 'Failed to delete inventory product' });
+  }
+});
+
 // Orders Endpoint (Historical orders for Dashboard)
 app.get('/api/orders', async (_req, res) => {
   try {

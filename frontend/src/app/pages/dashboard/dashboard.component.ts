@@ -749,6 +749,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
   newProdType = 'Electronics';
   publishingProduct = false;
 
+  // Module: Edit Product Modal State
+  showEditProductModal = false;
+  editingProduct: InventoryItem | null = null;
+  editProdSku = '';
+  editProdName = '';
+  editProdStock = 0;
+  editProdSupplier = 'Apex Global Electronics';
+  editProdCost = 35.00;
+  editProdPrice = 79.99;
+  editProdImageUrl = '';
+  editProdImagePreview = '';
+  editProdDescription = '';
+  editProdType = 'Electronics';
+  editProdChannel = 'Shopify';
+  savingEditedProduct = false;
+
+  // Module: Delete Product Confirmation Modal State
+  showDeleteProductModal = false;
+  deletingProduct: InventoryItem | null = null;
+  deletingProductLoading = false;
+
   constructor(
     private http: HttpClient,
     private router: Router,
@@ -877,6 +898,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.socket.on('INVENTORY_UPDATED', () => {
+      this.loadInventory();
+      this.loadMetrics();
+    });
+    this.socket.on('inventory_updated', () => {
+      this.loadInventory();
+      this.loadMetrics();
+    });
+    this.socket.on('INVENTORY_DELETED', () => {
+      this.loadInventory();
+      this.loadMetrics();
+    });
+    this.socket.on('inventory_deleted', () => {
       this.loadInventory();
       this.loadMetrics();
     });
@@ -2695,6 +2728,139 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.publishingProduct = false;
         console.error('Error creating product in inventory/Shopify:', err);
         const errMsg = err.error?.error || 'Failed to publish product to Shopify and inventory';
+        this.showToast(errMsg);
+      }
+    });
+  }
+
+  // --- Inventory Edit Product Methods ---
+  openEditProductModal(item: InventoryItem) {
+    this.editingProduct = item;
+    this.editProdSku = item.sku;
+    this.editProdName = item.product_name;
+    this.editProdStock = item.stock_quantity;
+    this.editProdSupplier = item.supplier_name || 'Apex Global Electronics';
+    this.editProdCost = item.unit_cost || 45.00;
+    this.editProdPrice = item.sale_price || 89.99;
+    this.editProdImageUrl = item.image_url || '';
+    this.editProdImagePreview = item.image_url || '';
+    this.editProdDescription = '';
+    this.editProdType = item.product_type || this.productTypes[0] || 'Electronics';
+    this.editProdChannel = item.channel || 'Shopify';
+    this.savingEditedProduct = false;
+    this.showEditProductModal = true;
+  }
+
+  closeEditProductModal() {
+    this.showEditProductModal = false;
+    this.editingProduct = null;
+    this.savingEditedProduct = false;
+  }
+
+  onEditProductImageSelected(event: any) {
+    const file = event.target?.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        this.showToast('Image file too large (Max 5MB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.editProdImageUrl = reader.result as string;
+        this.editProdImagePreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  onEditProductImageUrlChange() {
+    this.editProdImagePreview = this.editProdImageUrl ? this.editProdImageUrl.trim() : '';
+  }
+
+  clearEditProductImage() {
+    this.editProdImageUrl = '';
+    this.editProdImagePreview = '';
+  }
+
+  saveEditedProduct() {
+    if (!this.editProdName.trim()) {
+      this.showToast('Product name is required');
+      return;
+    }
+
+    this.savingEditedProduct = true;
+    const payload = {
+      product_name: this.editProdName.trim(),
+      stock_quantity: Number(this.editProdStock) || 0,
+      supplier_name: this.editProdSupplier,
+      unit_cost: Number(this.editProdCost) || 0,
+      sale_price: Number(this.editProdPrice) || 0,
+      image_url: this.editProdImageUrl ? this.editProdImageUrl.trim() : undefined,
+      channel: this.editProdChannel,
+      description: this.editProdDescription ? this.editProdDescription.trim() : undefined,
+      product_type: this.editProdType || 'Electronics'
+    };
+
+    this.http.put<any>(`http://localhost:3000/api/inventory/${encodeURIComponent(this.editProdSku)}`, payload).subscribe({
+      next: (res) => {
+        this.savingEditedProduct = false;
+        this.closeEditProductModal();
+        if (res.shopifySyncStatus === 'synced') {
+          this.showToast(`✅ Product ${res.sku} updated and synced with Shopify!`);
+        } else if (res.shopifySyncStatus === 'failed') {
+          this.showToast(`⚠️ Updated locally. Shopify: ${res.shopifyMessage}`);
+        } else {
+          this.showToast(`Product ${res.sku} updated successfully`);
+        }
+        this.loadInventory();
+        this.loadMetrics();
+      },
+      error: (err) => {
+        this.savingEditedProduct = false;
+        console.error('Error updating product in inventory:', err);
+        const errMsg = err.error?.error || 'Failed to update product';
+        this.showToast(errMsg);
+      }
+    });
+  }
+
+  // --- Inventory Delete Product Methods ---
+  openDeleteProductModal(item: InventoryItem) {
+    this.deletingProduct = item;
+    this.deletingProductLoading = false;
+    this.showDeleteProductModal = true;
+  }
+
+  closeDeleteProductModal() {
+    this.showDeleteProductModal = false;
+    this.deletingProduct = null;
+    this.deletingProductLoading = false;
+  }
+
+  confirmDeleteProduct() {
+    if (!this.deletingProduct) return;
+
+    const sku = this.deletingProduct.sku;
+    this.deletingProductLoading = true;
+
+    this.http.delete<any>(`http://localhost:3000/api/inventory/${encodeURIComponent(sku)}`).subscribe({
+      next: (res) => {
+        this.deletingProductLoading = false;
+        this.closeDeleteProductModal();
+        if (res.shopifyDeleted) {
+          this.showToast(`🗑️ Product ${sku} deleted from inventory & Shopify store`);
+        } else if (res.shopifyError) {
+          this.showToast(`🗑️ Deleted from local inventory. Shopify: ${res.shopifyError}`);
+        } else {
+          this.showToast(`Product ${sku} deleted successfully`);
+        }
+        this.loadInventory();
+        this.loadMetrics();
+      },
+      error: (err) => {
+        this.deletingProductLoading = false;
+        console.error('Error deleting product from inventory:', err);
+        const errMsg = err.error?.error || 'Failed to delete product';
         this.showToast(errMsg);
       }
     });
