@@ -6,11 +6,15 @@ export interface UserSession {
   id: string;
   email: string;
   role: 'Admin' | 'Operator';
+  mfa_enabled?: boolean;
 }
 
 interface LoginResponse {
-  token: string;
-  user: UserSession;
+  token?: string;
+  user?: UserSession;
+  mfaRequired?: boolean;
+  email?: string;
+  message?: string;
 }
 
 import { environment } from '../../environments/environment';
@@ -23,9 +27,14 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
+  login(email: string, password: string, mfaCode?: string): Observable<LoginResponse> {
+    const payload: any = { email, password };
+    if (mfaCode && mfaCode.trim()) {
+      payload.mfaCode = mfaCode.trim();
+    }
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, payload).pipe(
       tap(response => {
+        if (response.mfaRequired) return;
         if (response.token) {
           localStorage.setItem('token', response.token);
         }

@@ -14,6 +14,20 @@ import { EncryptionService } from './services/encryption.service';
 import { ShopifyService } from './services/shopify.service';
 import { KeyManagementService } from './services/kms.service';
 import { DevOpsService } from './services/devops.service';
+import { websocketService } from './services/websocket.service';
+import { ComplianceEngineService } from './services/compliance-engine.service';
+import { ShipmentTrackingService } from './services/shipment-tracking.service';
+import { AuditService } from './services/audit.service';
+import { getComplianceLocations, getComplianceAlerts, resolveComplianceAlert } from './controllers/compliance.controller';
+import {
+  authenticateJWT,
+  requireRole,
+  AuthenticatedRequest,
+  isAdminRole,
+  maskName,
+  maskAddress,
+  maskPhone,
+} from './middleware/auth.middleware';
 
 dotenv.config();
 
@@ -34,6 +48,12 @@ const io = new Server(server, {
     origin: '*',
   }
 });
+
+// Initialize WebSocket & Compliance Engine Services
+websocketService.init(io);
+ComplianceEngineService.init(pool, io);
+ShipmentTrackingService.init(pool, io);
+AuditService.init(pool);
 
 // Enable trust proxy for Cloudflare Tunnel and reverse proxies
 app.set('trust proxy', 1);
@@ -74,6 +94,50 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.post('/api/login', authLimiter, login);
+app.post('/api/v1/webhooks/shopify', handleWebhook(io));
+app.post('/api/v1/webhooks/orders/shopify', handleWebhook(io));
+app.post('/api/v1/webhooks/orders', handleWebhook(io));
+app.post('/api/v1/webhooks/amazon', handleWebhook(io));
+
+// ISO 27001 A.8.3 — Global JWT & RBAC Protection for all /api/* routes
+app.use('/api', (req, res, next) => {
+  if (
+    req.path === '/login' ||
+    req.path.startsWith('/v1/webhooks') ||
+    req.path === '/security/privacy-notice'
+  ) {
+    next();
+    return;
+  }
+  authenticateJWT(req as AuthenticatedRequest, res, next);
+});
+
+// Admin-only RBAC guards (ISO 27001 A.8.3)
+app.use('/api/users', requireRole('Admin'));
+app.use('/api/security/key-status', requireRole('Admin'));
+app.use('/api/security/rotate-keys', requireRole('Admin'));
+app.use('/api/security/audit-logs', requireRole('Admin'));
+app.use('/api/customers/:id/anonymize', requireRole('Admin'));
+app.use('/api/customers/:id/export', requireRole('Admin'));
+app.use('/api/shipments/clear-all', requireRole('Admin'));
+app.use('/api/shipments/retention/purge', requireRole('Admin'));
+app.use('/api/v1/audits', requireRole('Admin'));
+app.use('/api/metrics', requireRole('Admin'));
+app.use('/api/inventory', (req, res, next) => {
+  if (req.method === 'GET' || req.path === '/restock') {
+    next();
+    return;
+  }
+  requireRole('Admin')(req as AuthenticatedRequest, res, next);
+});
+app.use('/api/suppliers', (req, res, next) => {
+  if (req.method === 'GET' || req.path.endsWith('/order')) {
+    next();
+    return;
+  }
+  requireRole('Admin')(req as AuthenticatedRequest, res, next);
+});
+
 app.get('/api/users', getUsers);
 app.post('/api/users', createUser);
 app.put('/api/users/:id', updateUser);
@@ -84,10 +148,468 @@ app.get('/api/auth/mfa/status', getMfaStatus);
 app.post('/api/auth/mfa/setup', setupMfa);
 app.post('/api/auth/mfa/verify', verifyAndEnableMfa);
 app.post('/api/auth/mfa/disable', disableMfa);
-app.post('/api/v1/webhooks/shopify', handleWebhook(io));
-app.post('/api/v1/webhooks/orders/shopify', handleWebhook(io));
-app.post('/api/v1/webhooks/orders', handleWebhook(io));
-app.post('/api/v1/webhooks/amazon', handleWebhook(io));
+
+// Multi-Location Compliance & Alert Routes
+app.get('/api/v1/compliance/locations', getComplianceLocations);
+app.get('/api/v1/compliance/alerts', getComplianceAlerts);
+app.patch('/api/v1/compliance/alerts/:id/resolve', resolveComplianceAlert);
+
+// Admin-Only Scalable Cybersecurity & ISO Audit System
+app.get('/api/v1/audits', async (_req, res) => {
+  try {
+    const audits = await AuditService.listAudits(25);
+    res.json(audits);
+  } catch (err: any) {
+    console.error('[Audits] Error listing audits:', err);
+    res.status(500).json({ error: 'Failed to retrieve security audits' });
+  }
+});
+
+app.post('/api/v1/audits/run', async (req: AuthenticatedRequest, res) => {
+  try {
+    const actor = req.user?.email || 'admin@ordersync.app';
+    const audit = await AuditService.runFullAudit(actor);
+    res.json(audit);
+  } catch (err: any) {
+    console.error('[Audits] Error running audit:', err);
+    res.status(500).json({ error: 'Failed to execute security audit' });
+  }
+});
+
+app.get('/api/v1/audits/:id/pdf', async (req, res) => {
+  try {
+    const pdfResult = await AuditService.generateAuditPdfBuffer(req.params.id);
+    if (!pdfResult) {
+      res.status(404).json({ error: 'Audit record not found' });
+      return;
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${pdfResult.filename}"`);
+    res.send(pdfResult.buffer);
+  } catch (err: any) {
+    console.error('[Audits] Error generating audit PDF:', err);
+    res.status(500).json({ error: 'Failed to generate audit PDF report' });
+  }
+});
+
+app.post('/api/v1/audits/maintenance/cleanup', async (req: AuthenticatedRequest, res) => {
+  try {
+    const mode = req.body?.mode === 'DEMO_RECORDS' ? 'DEMO_RECORDS' : 'RESOLVED_ALERTS';
+    const actor = req.user?.email || 'admin@ordersync.app';
+    const result = await AuditService.cleanDatabase(mode, actor);
+    res.json(result);
+  } catch (err: any) {
+    console.error('[Audits] Error running database cleanup:', err);
+    res.status(500).json({ error: 'Failed to execute database maintenance cleanup' });
+  }
+});
+
+app.post('/api/v1/compliance/simulate-breach', async (req, res) => {
+  try {
+    const scenario = String(req.body?.scenario || 'CARTA_PORTE_MISSING').toUpperCase();
+    const locationCode =
+      scenario === 'LATENCY_BREACH'
+        ? 'US-TX-HQ'
+        : scenario === 'LOI_25_MISSING'
+          ? 'CA-MTL'
+          : 'MX-MTY';
+
+    const locRes = await pool.query(
+      'SELECT id, code, name FROM locations WHERE code = $1 LIMIT 1',
+      [locationCode]
+    );
+    if (locRes.rows.length === 0) {
+      res.status(404).json({ error: `Location ${locationCode} not found` });
+      return;
+    }
+
+    const loc = locRes.rows[0];
+    const evalResult = await ComplianceEngineService.evaluateOrderComplianceDetailed(
+      {
+        externalOrderId: `DEMO-${Date.now().toString().slice(-5)}`,
+        fullName: 'Demo Consulting Client',
+        shippingAddress: `${loc.name} Corridor`,
+        phone: '+1-555-0199',
+        syncLatencyMs: scenario === 'LATENCY_BREACH' ? 6420 : 185,
+        requiresLogisticsTransit: true,
+        satCartaPorteFolio: scenario === 'CARTA_PORTE_MISSING' ? null : 'CP-SAT-DEMO-OK',
+        frenchTemplateAvailable: scenario !== 'LOI_25_MISSING',
+      },
+      loc.id
+    );
+
+    const openRes = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE is_resolved = FALSE)::INT AS open_count,
+         COUNT(*) FILTER (WHERE is_resolved = FALSE AND severity = 'CRITICAL')::INT AS critical_count
+       FROM compliance_alerts
+       WHERE location_id = $1`,
+      [loc.id]
+    );
+    const counts = openRes.rows[0];
+    const healthStatus = counts.critical_count > 0 ? 'rojo' : counts.open_count > 0 ? 'amarillo' : 'verde';
+
+    websocketService.emitLocationStatusChanged({
+      locationId: loc.id,
+      locationCode: loc.code,
+      locationName: loc.name,
+      healthStatus,
+      openAlertsCount: counts.open_count,
+    });
+
+    res.json(evalResult);
+  } catch (err: any) {
+    console.error('[Compliance] Error simulating breach:', err);
+    res.status(500).json({ error: 'Failed to simulate compliance breach' });
+  }
+});
+
+// Dispatch a real inter-hub shipment across the 10 North America locations
+app.post('/api/v1/shipments/dispatch-corridor', async (req, res) => {
+  try {
+    const originCode = String(req.body?.originCode || 'US-TX-HQ').toUpperCase();
+    const destCode = String(req.body?.destinationCode || 'MX-MTY').toUpperCase();
+    const carrier = String(req.body?.carrier || 'DHL Express');
+    const linkedOrderId = req.body?.orderId ? String(req.body.orderId).trim() : null;
+
+    const locRes = await pool.query(
+      'SELECT id, code, name, city, country FROM locations WHERE code IN ($1, $2)',
+      [originCode, destCode]
+    );
+    const originLoc = locRes.rows.find((r: any) => r.code === originCode) || {
+      id: null,
+      code: originCode,
+      name: 'Houston Fulfillment HQ',
+      city: 'Houston, TX',
+      country: 'US',
+    };
+    const destLoc = locRes.rows.find((r: any) => r.code === destCode) || {
+      id: null,
+      code: destCode,
+      name: 'Monterrey Industrial Hub',
+      city: 'Monterrey, NL',
+      country: 'MX',
+    };
+
+    let order: any = null;
+    if (linkedOrderId) {
+      const existingOrd = await pool.query('SELECT * FROM orders WHERE id = $1', [linkedOrderId]);
+      if (existingOrd.rows.length > 0) {
+        order = existingOrd.rows[0];
+      }
+    }
+
+    const externalOrderId = order?.external_order_id || `OS-${originLoc.code}-${Date.now().toString().slice(-5)}`;
+    const prefix = carrier.includes('FedEx') ? 'FDX' : carrier.includes('UPS') ? '1Z999' : 'DHL';
+    const trackingPlain = `${prefix}-${Date.now().toString().slice(-8)}-${destLoc.country}`;
+    const destLabel = `${destLoc.name} (${destLoc.city || destLoc.code}, ${destLoc.country})`;
+    const originLabel = `${originLoc.name} (${originLoc.code})`;
+
+    if (!order) {
+      const orderRes = await pool.query(
+        `INSERT INTO orders (external_order_id, channel, status, total_amount, currency, sync_latency_ms, origin_location_id, compliance_status)
+         VALUES ($1, 'Shopify', 'paid', $2, 'USD', $3, $4, 'VERIFIED')
+         RETURNING *`,
+        [externalOrderId, Number((240 + Math.random() * 650).toFixed(2)), Math.floor(110 + Math.random() * 190), originLoc.id]
+      );
+      order = orderRes.rows[0];
+
+      await pool.query(
+        `INSERT INTO customers (order_id, encrypted_full_name, encrypted_shipping_address, encrypted_phone)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          order.id,
+          EncryptionService.encrypt(`${destLoc.name} Receiving`),
+          EncryptionService.encrypt(destLabel),
+          EncryptionService.encrypt(destLoc.country === 'MX' ? '+52-81-8356-9000' : '+1-713-555-0199'),
+        ]
+      );
+    }
+
+    const checkpoints = JSON.stringify([
+      { step: 'processing', title: `ISO-27001 Packaging at ${originLoc.name}`, timestamp: 'Completed', done: true },
+      { step: 'in_transit', title: `In Transit via ${carrier} Corridor`, timestamp: 'In Progress', done: true },
+      { step: 'out_for_delivery', title: `Arrival at ${destLoc.name}`, timestamp: 'Pending', done: false },
+      { step: 'delivered', title: 'Confirmed Delivery (Digital POD)', timestamp: 'Pending', done: false },
+    ]);
+
+    const shipRes = await pool.query(
+      `INSERT INTO shipments (order_id, external_order_id, channel, tracking_number, carrier, origin, destination, current_step, is_delivered, estimated_delivery, checkpoints)
+       VALUES ($1, $2, 'Shopify', $3, $4, $5, $6, 'in_transit', FALSE, $7, $8)
+       RETURNING *`,
+      [
+        order.id,
+        externalOrderId,
+        EncryptionService.encryptString(trackingPlain),
+        carrier,
+        originLabel,
+        EncryptionService.encryptString(destLabel),
+        `${originLoc.code} → ${destLoc.code} Corridor`,
+        checkpoints,
+      ]
+    );
+
+    const shipmentId = shipRes.rows[0].id;
+    const telemetry = await ShipmentTrackingService.getTrackingTelemetry(shipmentId);
+    io.emit('SHIPMENT_CREATED', { id: shipmentId, external_order_id: externalOrderId });
+    res.status(201).json({ shipment: shipRes.rows[0], telemetry });
+  } catch (error) {
+    console.error('[ShipmentTracking] Error dispatching corridor shipment:', error);
+    res.status(500).json({ error: 'Failed to dispatch corridor shipment' });
+  }
+});
+
+// Toggle Customs Hold / Release Hold for a Shipment (integrates with Compliance & Hubs)
+app.post('/api/v1/shipments/:id/customs-hold', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const hold = req.body?.hold !== false;
+
+    const shipRes = await pool.query('SELECT * FROM shipments WHERE id = $1', [id]);
+    if (shipRes.rows.length === 0) {
+      res.status(404).json({ error: 'Shipment not found' });
+      return;
+    }
+    const ship = shipRes.rows[0];
+    const nextStep = hold ? 'customs_hold' : 'in_transit';
+
+    await pool.query(
+      `UPDATE shipments SET current_step = $1, updated_at = NOW() WHERE id = $2`,
+      [nextStep, id]
+    );
+
+    if (hold) {
+      const locRes = await pool.query(
+        `SELECT id, code, name FROM locations WHERE code IN ('MX-CHH', 'US-MI', 'MX-MTY') ORDER BY CASE WHEN code = 'MX-CHH' THEN 0 ELSE 1 END LIMIT 1`
+      );
+      const loc = locRes.rows[0];
+      if (loc) {
+        const msg = `Customs inspection hold triggered for shipment ${ship.external_order_id || id} at ${loc.name} (${loc.code}).`;
+        const alertRes = await pool.query(
+          `INSERT INTO compliance_alerts (order_id, location_id, rule_code, severity, message, is_resolved)
+           VALUES ($1, $2, 'CUSTOMS-HOLD', 'HIGH', $3, FALSE) RETURNING id, created_at`,
+          [ship.order_id || null, loc.id, msg]
+        );
+        io.emit('COMPLIANCE_ALERT', {
+          alertId: alertRes.rows[0].id,
+          locationId: loc.id,
+          locationCode: loc.code,
+          locationName: loc.name,
+          ruleCode: 'CUSTOMS-HOLD',
+          severity: 'HIGH',
+          message: msg,
+          timestamp: alertRes.rows[0].created_at,
+          orderId: ship.order_id || null,
+        });
+      }
+    } else if (ship.order_id) {
+      await pool.query(
+        `UPDATE compliance_alerts SET is_resolved = TRUE, resolved_at = NOW() WHERE order_id = $1 AND rule_code = 'CUSTOMS-HOLD' AND is_resolved = FALSE`,
+        [ship.order_id]
+      );
+    }
+
+    const telemetry = await ShipmentTrackingService.getTrackingTelemetry(id);
+    io.emit('SHIPMENT_UPDATED', { id, current_step: nextStep });
+    res.json({ hold, telemetry });
+  } catch (error) {
+    console.error('[ShipmentTracking] Error toggling customs hold:', error);
+    res.status(500).json({ error: 'Failed to update customs hold status' });
+  }
+});
+
+// Realistic End-to-End Order + Customer (AES-256) + Shipment + Compliance Flow
+app.post('/api/v1/compliance/simulate-order-flow', async (req, res) => {
+  try {
+    const locationCode = String(req.body?.locationCode || 'MX-MTY').toUpperCase();
+    const forceBreach = req.body?.forceBreach !== false;
+
+    const locRes = await pool.query(
+      'SELECT id, code, name, city, country FROM locations WHERE code = $1 LIMIT 1',
+      [locationCode]
+    );
+    if (locRes.rows.length === 0) {
+      res.status(404).json({ error: `Location ${locationCode} not found` });
+      return;
+    }
+    const loc = locRes.rows[0];
+
+    const externalOrderId = `OS-${loc.code}-${Date.now().toString().slice(-5)}`;
+    const channel = 'Shopify';
+    const totalAmount = Number((120 + Math.random() * 880).toFixed(2));
+    const latencyMs = forceBreach && loc.code === 'US-TX-HQ' ? 6150 : Math.floor(110 + Math.random() * 340);
+
+    // 1. Insert real order
+    const orderRes = await pool.query(
+      `INSERT INTO orders (external_order_id, channel, status, total_amount, currency, sync_latency_ms, origin_location_id)
+       VALUES ($1, $2, 'paid', $3, 'USD', $4, $5)
+       RETURNING *`,
+      [externalOrderId, channel, totalAmount, latencyMs, loc.id]
+    );
+    const order = orderRes.rows[0];
+
+    // 2. Evaluate real compliance & encrypt PII (AES-256-GCM)
+    const orderComplianceInput = {
+      id: order.id,
+      externalOrderId,
+      fullName: loc.country === 'MX' ? 'Sofía Garza Trevino' : loc.code === 'CA-MTL' ? 'Claire Tremblay' : 'Jordan Miller',
+      shippingAddress: `${loc.city || loc.name}, ${loc.country}`,
+      phone: loc.country === 'MX' ? '+52-81-8000-1234' : '+1-713-555-0142',
+      syncLatencyMs: latencyMs,
+      requiresLogisticsTransit: true,
+      satCartaPorteFolio: forceBreach && loc.country === 'MX' ? null : `CP-SAT-${Date.now().toString().slice(-6)}`,
+      frenchTemplateAvailable: !(forceBreach && loc.code === 'CA-MTL'),
+      encryptedPii: { fullName: '', shippingAddress: '', phone: '' },
+    };
+
+    const evalResult = await ComplianceEngineService.evaluateOrderComplianceDetailed(
+      orderComplianceInput,
+      loc.id
+    );
+
+    // 3. Insert encrypted customer PII into `customers`
+    await pool.query(
+      `INSERT INTO customers (order_id, encrypted_full_name, encrypted_shipping_address, encrypted_phone)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        order.id,
+        Buffer.from(orderComplianceInput.encryptedPii.fullName || '', 'utf8'),
+        Buffer.from(orderComplianceInput.encryptedPii.shippingAddress || '', 'utf8'),
+        Buffer.from(orderComplianceInput.encryptedPii.phone || '', 'utf8'),
+      ]
+    );
+
+    // 4. Create real shipment in `shipments`
+    const trackingPlain = `1Z999OS${Date.now().toString().slice(-8)}`;
+    const destLabel = `${loc.city || loc.name}, ${loc.country}`;
+    const defaultCheckpoints = JSON.stringify([
+      { step: 'processing', title: 'Order Received & Packaged', timestamp: 'Completed', done: true },
+      { step: 'in_transit', title: 'Dispatched on Route', timestamp: 'In Progress', done: true },
+      { step: 'out_for_delivery', title: 'Out for Local Delivery', timestamp: 'Pending', done: false },
+      { step: 'delivered', title: 'Delivered to Recipient', timestamp: 'Pending', done: false }
+    ]);
+    const shipRes = await pool.query(
+      `INSERT INTO shipments (order_id, external_order_id, channel, tracking_number, carrier, origin, destination, current_step, is_delivered, estimated_delivery, checkpoints)
+       VALUES ($1, $2, 'Shopify', $3, $4, $5, $6, 'in_transit', FALSE, 'In transit · Express Corridor', $7)
+       RETURNING *`,
+      [
+        order.id,
+        externalOrderId,
+        EncryptionService.encryptString(trackingPlain),
+        'DHL Express',
+        `${loc.name} (${loc.code})`,
+        EncryptionService.encryptString(destLabel),
+        defaultCheckpoints,
+      ]
+    );
+
+    // 5. Emit real-time Socket.IO events
+    websocketService.emitNewOrderSynced({
+      orderId: order.id,
+      externalOrderId,
+      channel,
+      locationCode: loc.code,
+      complianceStatus: evalResult.status,
+    });
+
+    const openRes = await pool.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE is_resolved = FALSE)::INT AS open_count,
+         COUNT(*) FILTER (WHERE is_resolved = FALSE AND severity = 'CRITICAL')::INT AS critical_count
+       FROM compliance_alerts
+       WHERE location_id = $1`,
+      [loc.id]
+    );
+    const counts = openRes.rows[0];
+    websocketService.emitLocationStatusChanged({
+      locationId: loc.id,
+      locationCode: loc.code,
+      locationName: loc.name,
+      healthStatus: counts.critical_count > 0 ? 'rojo' : counts.open_count > 0 ? 'amarillo' : 'verde',
+      openAlertsCount: counts.open_count,
+    });
+
+    res.json({
+      order: { ...order, compliance_status: evalResult.status },
+      shipment: shipRes.rows[0],
+      compliance: evalResult,
+    });
+  } catch (err: any) {
+    console.error('[Compliance] Error simulating full order flow:', err);
+    res.status(500).json({ error: 'Failed to simulate realistic order flow' });
+  }
+});
+
+// Realistic Live Shipment Tracking Routes (Shippo API + GPS Ping + Simulation)
+app.get('/api/v1/shipments/shippo/:carrier/:trackingNumber', async (req, res) => {
+  try {
+    const { carrier, trackingNumber } = req.params;
+    const telemetry = await ShipmentTrackingService.fetchShippoTracking(carrier, trackingNumber);
+    if (!telemetry) {
+      res.status(404).json({ error: 'Tracking not found in Shippo or SHIPPO_API_KEY missing' });
+      return;
+    }
+    res.json(telemetry);
+  } catch (err: any) {
+    console.error('[Tracking] Error querying Shippo:', err);
+    res.status(500).json({ error: 'Failed to query Shippo tracking API' });
+  }
+});
+
+app.post('/api/v1/shipments/:id/tracking/gps-ping', async (req, res) => {
+  try {
+    const { lat, lng, speedKmh, headingDeg, currentStep, facility, scanCode } = req.body || {};
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      res.status(400).json({ error: 'Numeric lat and lng coordinates are required' });
+      return;
+    }
+    const telemetry = await ShipmentTrackingService.ingestGpsPing(req.params.id, {
+      lat,
+      lng,
+      speedKmh,
+      headingDeg,
+      currentStep,
+      facility,
+      scanCode,
+    });
+    if (!telemetry) {
+      res.status(404).json({ error: 'Shipment not found' });
+      return;
+    }
+    res.json(telemetry);
+  } catch (err: any) {
+    console.error('[Tracking] Error ingesting GPS ping:', err);
+    res.status(500).json({ error: 'Failed to ingest GPS ping' });
+  }
+});
+app.get('/api/v1/shipments/:id/tracking', async (req, res) => {
+  try {
+    const telemetry = await ShipmentTrackingService.getTrackingTelemetry(req.params.id);
+    if (!telemetry) {
+      res.status(404).json({ error: 'Shipment not found' });
+      return;
+    }
+    res.json(telemetry);
+  } catch (err: any) {
+    console.error('[Tracking] Error fetching live telemetry:', err);
+    res.status(500).json({ error: 'Failed to retrieve shipment tracking telemetry' });
+  }
+});
+
+app.post('/api/v1/shipments/:id/tracking/simulate-tick', async (req, res) => {
+  try {
+    const increment = Number(req.body?.stepIncrement) || 18;
+    const telemetry = await ShipmentTrackingService.simulateTrackingTick(req.params.id, increment);
+    if (!telemetry) {
+      res.status(404).json({ error: 'Shipment not found' });
+      return;
+    }
+    res.json(telemetry);
+  } catch (err: any) {
+    console.error('[Tracking] Error simulating tracking tick:', err);
+    res.status(500).json({ error: 'Failed to simulate tracking update' });
+  }
+});
 
 // Shopify Official API Endpoints
 app.get('/api/v1/shopify/status', async (_req, res) => {
@@ -391,7 +913,7 @@ app.post('/api/inventory', async (req, res) => {
   }
 });
 
-// Restock Inventory Endpoint
+// Restock Inventory Endpoint (syncs to PostgreSQL & Shopify)
 app.post('/api/inventory/restock', async (req, res) => {
   const { sku, amount } = req.body;
   const quantityToAdd = Number(amount) || 10;
@@ -403,7 +925,18 @@ app.post('/api/inventory/restock', async (req, res) => {
        RETURNING *`,
       [quantityToAdd, sku]
     );
-    res.json(result.rows[0]);
+    const updated = result.rows[0];
+    let shopifySync: any = { status: 'local_only' };
+    if (updated) {
+      shopifySync = await ShopifyService.syncStockToShopify(
+        updated.shopify_product_id,
+        updated.sku,
+        updated.stock_quantity
+      );
+      io.emit('INVENTORY_RESTOCKED', updated);
+      ShopifyService.autoSyncAllFromShopify(io).catch(() => {});
+    }
+    res.json({ ...updated, shopifySync });
   } catch (error) {
     console.error('Error restocking inventory:', error);
     res.status(500).json({ error: 'Failed to restock inventory' });
@@ -459,6 +992,13 @@ app.put('/api/inventory/:sku', async (req, res) => {
 
     const finalName = product_name !== undefined ? product_name.trim() : current.product_name;
     const finalStock = stock_quantity !== undefined ? Number(stock_quantity) : current.stock_quantity;
+
+    if (current.shopify_product_id && stock_quantity !== undefined) {
+      const stockSync = await ShopifyService.syncStockToShopify(current.shopify_product_id, sku, finalStock);
+      if (stockSync.success && shopifySyncStatus === 'synced') {
+        shopifyMessage = `Updated product & stock (${finalStock}) in Shopify Store (ID: ${current.shopify_product_id})`;
+      }
+    }
     const finalSupplier = supplier_name !== undefined ? supplier_name : current.supplier_name;
     const finalUnitCost = unit_cost !== undefined ? Number(unit_cost) : current.unit_cost;
     const finalSalePrice = sale_price !== undefined ? Number(sale_price) : current.sale_price;
@@ -563,8 +1103,9 @@ app.delete('/api/inventory/:sku', async (req, res) => {
 });
 
 // Orders Endpoint (Historical orders for Dashboard)
-app.get('/api/orders', async (_req, res) => {
+app.get('/api/orders', async (req: AuthenticatedRequest, res) => {
   try {
+    const adminAccess = isAdminRole(req.user?.role);
     const result = await pool.query(`
       SELECT o.id, o.external_order_id, o.channel, o.status, o.total_amount, o.currency, o.sync_latency_ms, o.created_at,
              c.encrypted_full_name, c.encrypted_shipping_address, c.encrypted_phone
@@ -592,6 +1133,11 @@ app.get('/api/orders', async (_req, res) => {
         if (dec && !dec.includes('[Decryption Error]')) customerPhone = dec;
       }
 
+      // ISO 27001 A.8.11: Mask customer PII for non-Admin roles (e.g. Operator)
+      const finalName = adminAccess ? customerName : maskName(customerName);
+      const finalAddress = adminAccess ? customerAddress : maskAddress(customerAddress);
+      const finalPhone = adminAccess ? customerPhone : maskPhone(customerPhone);
+
       return {
         id: row.id,
         external_order_id: row.external_order_id,
@@ -602,10 +1148,11 @@ app.get('/api/orders', async (_req, res) => {
         sync_latency_ms: row.sync_latency_ms,
         created_at: row.created_at,
         customer: {
-          full_name: customerName,
-          shipping_address: customerAddress,
-          phone: customerPhone,
-          db_encrypted: true
+          full_name: finalName,
+          shipping_address: finalAddress,
+          phone: finalPhone,
+          db_encrypted: true,
+          pii_masked: !adminAccess
         }
       };
     });
@@ -866,7 +1413,7 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
     // 4. Record purchase order with encrypted supplier and product names
     const poRes = await pool.query(
       `INSERT INTO purchase_orders (po_number, supplier_id, supplier_name, sku, product_name, units, unit_cost, total_cost, status, estimated_arrival)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Entregado a Almacén', $9)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'Delivered to Warehouse', $9)
        RETURNING *`,
       [
         poNumber,
@@ -887,15 +1434,24 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
       product_name: product.product_name
     };
 
-    // Emit real-time notification
+    // Emit real-time notification & sync stock to Shopify if linked
+    const updatedItem = updateRes.rows[0];
+    const shopifySync = await ShopifyService.syncStockToShopify(
+      updatedItem?.shopify_product_id,
+      targetSku,
+      updatedItem?.stock_quantity ?? quantity
+    );
+
     io.emit('PURCHASE_ORDER_CREATED', createdPo);
-    io.emit('INVENTORY_RESTOCKED', updateRes.rows[0]);
+    io.emit('INVENTORY_RESTOCKED', updatedItem);
+    ShopifyService.autoSyncAllFromShopify(io).catch(() => {});
 
     res.json({
-      message: `¡Surtido exitoso! Orden ${poNumber} emitida a ${supplier.name}. Se ingresaron +${quantity} unidades de "${product.product_name}" (${targetSku}) al inventario.`,
+      message: `Restock successful! Order ${poNumber} issued to ${supplier.name}. Added +${quantity} units of "${product.product_name}" (${targetSku}).`,
       po: createdPo,
       supplier: supplier.name,
-      updatedItem: updateRes.rows[0]
+      updatedItem,
+      shopifySync
     });
   } catch (error) {
     console.error('Error ordering from supplier:', error);
@@ -906,12 +1462,53 @@ app.post('/api/suppliers/:id/order', async (req, res) => {
 // Shipments / Tracking Routes (Rutas y Confirmación con Cifrado en Reposo)
 app.get('/api/shipments', async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM shipments ORDER BY created_at DESC');
-    const decrypted = result.rows.map(row => ({
-      ...row,
-      destination: EncryptionService.decryptString(row.destination),
-      tracking_number: EncryptionService.decryptString(row.tracking_number)
-    }));
+    const result = await pool.query(`
+      SELECT s.*, o.external_order_id AS order_external_id
+      FROM shipments s
+      LEFT JOIN orders o ON o.id = s.order_id
+      ORDER BY s.created_at DESC
+    `);
+    const Corridors = [
+      { origin: 'Houston Fulfillment HQ (US-TX-HQ)', dest: 'Monterrey Industrial Hub (MX-MTY)', eta: 'US-TX-HQ → MX-MTY · Customs Cleared' },
+      { origin: 'Toronto Fulfillment Hub (CA-TOR)', dest: 'Montreal Logistics Center (CA-MTL)', eta: 'CA-TOR → CA-MTL · Loi 25 Compliant' },
+      { origin: 'California West Hub (US-CA)', dest: 'Chihuahua Border Hub (MX-CHH)', eta: 'US-CA → MX-CHH · Carta Porte Active' },
+      { origin: 'Michigan State Hub (US-MI)', dest: 'Toronto Fulfillment Hub (CA-TOR)', eta: 'US-MI → CA-TOR · PIPEDA Verified' },
+      { origin: 'New York Distribution Hub (US-NYC)', dest: 'Houston Fulfillment HQ (US-TX-HQ)', eta: 'US-NYC → US-TX-HQ · NY SHIELD OK' },
+      { origin: 'Monterrey Industrial Hub (MX-MTY)', dest: 'Mexico City Metro Hub (MX-CDMX)', eta: 'MX-MTY → MX-CDMX · SAT Carta Porte' },
+      { origin: 'Montreal Logistics Center (CA-MTL)', dest: 'New York Distribution Hub (US-NYC)', eta: 'CA-MTL → US-NYC · Cross-Border' },
+      { origin: 'Houston Fulfillment HQ (US-TX-HQ)', dest: 'California West Hub (US-CA)', eta: 'US-TX-HQ → US-CA · TDPSA / CCPA' },
+      { origin: 'Chihuahua Border Hub (MX-CHH)', dest: 'Querétaro National Hub (MX-FED)', eta: 'MX-CHH → MX-FED · Federal Corridor' },
+      { origin: 'Querétaro National Hub (MX-FED)', dest: 'Mexico City Metro Hub (MX-CDMX)', eta: 'MX-FED → MX-CDMX · Final Mile' },
+    ];
+    const Carriers = ['DHL Express', 'FedEx Express', 'UPS Ground'];
+    const decrypted = result.rows.map((row, idx) => {
+      const step = row.current_step || 'in_transit';
+      const delivered = Boolean(row.is_delivered) || step === 'delivered';
+      const rawCheckpoints = Array.isArray(row.checkpoints) ? row.checkpoints : [];
+      const safeCheckpoints = rawCheckpoints.length >= 4 ? rawCheckpoints : [
+        { step: 'processing', title: 'Order Received & Packaged', timestamp: 'Completed', done: true },
+        { step: 'in_transit', title: 'Dispatched on Route', timestamp: step !== 'processing' ? 'Completed' : 'Pending', done: step !== 'processing' },
+        { step: 'out_for_delivery', title: 'Out for Local Delivery', timestamp: (step === 'out_for_delivery' || delivered) ? 'Completed' : 'Pending', done: step === 'out_for_delivery' || delivered },
+        { step: 'delivered', title: 'Delivered to Recipient', timestamp: delivered ? 'Completed' : 'Pending', done: delivered }
+      ];
+      const corridor = Corridors[idx % Corridors.length];
+      const rawDest = EncryptionService.decryptString(row.destination);
+      const isGenericDest = !rawDest || rawDest.includes('123 Main St') || rawDest.includes('Almacén') || rawDest.includes('Main Warehouse');
+      const finalOrigin = row.origin && row.origin.includes('(') ? row.origin : corridor.origin;
+      const finalDest = !isGenericDest ? rawDest : corridor.dest;
+
+      return {
+        ...row,
+        external_order_id: row.external_order_id || row.order_external_id || `#10${10 + idx}`,
+        channel: 'Shopify',
+        carrier: (!row.carrier || row.carrier === 'Amazon Logistics' || row.carrier === 'OrderSync Express') ? Carriers[idx % Carriers.length] : row.carrier,
+        origin: finalOrigin,
+        destination: finalDest,
+        tracking_number: EncryptionService.decryptString(row.tracking_number) || `DHL-8840-${1000 + idx}`,
+        estimated_delivery: isGenericDest ? corridor.eta : (row.estimated_delivery || corridor.eta),
+        checkpoints: safeCheckpoints
+      };
+    });
     res.json(decrypted);
   } catch (error) {
     console.error('Error fetching shipments:', error);
@@ -1322,9 +1919,9 @@ app.post('/api/orders/simulate-batch', async (req, res) => {
 
     const createdOrders: string[] = [];
     for (let i = 0; i < count; i++) {
-      const channel = i % 2 === 0 ? 'Shopify' : 'Amazon';
+      const channel = 'Shopify';
       const orderNum = Math.floor(10000 + Math.random() * 90000);
-      const extId = channel === 'Shopify' ? `#SHPF-${orderNum}` : `AMZ-${Date.now().toString().slice(-6)}-${orderNum}`;
+      const extId = `#SHPF-${orderNum}`;
       const item = items[Math.floor(Math.random() * items.length)];
       const amount = Number(item.sale_price) || 199.99;
       const latency = Math.floor(800 + Math.random() * 2200);
@@ -1367,10 +1964,8 @@ app.post('/api/orders/simulate-batch', async (req, res) => {
         [item.sku]
       );
 
-      const carrier = channel === 'Shopify' ? 'DHL Express' : 'Amazon Logistics';
-      const tracking = channel === 'Shopify' 
-        ? `DHL-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-EXP`
-        : `TBA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-AMZ`;
+      const carrier = i % 2 === 0 ? 'DHL Express' : 'FedEx Express';
+      const tracking = `DHL-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-EXP`;
 
       const encTracking = EncryptionService.encryptString(tracking);
       const encDestination = EncryptionService.encryptString(selectedSample.address || 'Dallas, TX Hub');
@@ -1528,13 +2123,21 @@ app.post('/api/returns/:id/process', async (req, res) => {
 
       const shouldRestock = restock_inventory !== undefined ? !!restock_inventory : returnItem.restock_inventory;
       if (shouldRestock) {
-        // Atomic stock re-entry in inventory table
-        await pool.query(
+        // Atomic stock re-entry in inventory table + Shopify inventory sync
+        const invUp = await pool.query(
           `UPDATE inventory 
            SET stock_quantity = stock_quantity + $1, updated_at = CURRENT_TIMESTAMP
-           WHERE sku = $2`,
+           WHERE sku = $2
+           RETURNING *`,
           [returnItem.quantity || 1, returnItem.sku]
         );
+        if (invUp.rows[0]) {
+          await ShopifyService.syncStockToShopify(
+            invUp.rows[0].shopify_product_id,
+            invUp.rows[0].sku,
+            invUp.rows[0].stock_quantity
+          );
+        }
         restockDone = true;
       }
 
@@ -1925,8 +2528,9 @@ app.get('/api/metrics', async (req, res) => {
 });
 
 // Customers Endpoint (Module 4: Customer PII & Encryption)
-app.get('/api/customers', async (_req, res) => {
+app.get('/api/customers', async (req: AuthenticatedRequest, res) => {
   try {
+    const adminAccess = isAdminRole(req.user?.role);
     const result = await pool.query(`
       SELECT c.id, c.order_id, o.external_order_id, o.channel,
              c.encrypted_full_name, c.encrypted_shipping_address, c.encrypted_phone,
@@ -1963,20 +2567,26 @@ app.get('/api/customers', async (_req, res) => {
 
       const hexBuffer = row.encrypted_full_name ? row.encrypted_full_name.toString('hex') : '';
 
+      // ISO 27001 A.8.11: Mask customer PII for non-Admin roles (e.g. Operator)
+      const finalName = adminAccess ? decName : maskName(decName);
+      const finalAddress = adminAccess ? decAddress : maskAddress(decAddress);
+      const finalPhone = adminAccess ? decPhone : maskPhone(decPhone);
+
       return {
         id: row.id,
         order_id: row.order_id,
         external_order_id: row.external_order_id,
         channel: row.channel,
         created_at: row.created_at,
-        full_name: decName,
-        shipping_address: decAddress,
-        phone: decPhone,
-        decrypted_name: decName,
-        decrypted_address: decAddress,
-        decrypted_phone: decPhone,
+        full_name: finalName,
+        shipping_address: finalAddress,
+        phone: finalPhone,
+        decrypted_name: finalName,
+        decrypted_address: finalAddress,
+        decrypted_phone: finalPhone,
+        pii_masked: !adminAccess,
         raw_buffer_preview: hexBuffer ? '0x' + hexBuffer.slice(0, 24) + '...' : '0x7e81a3...',
-        raw_hex_full: hexBuffer ? '0x' + hexBuffer : '',
+        raw_hex_full: adminAccess && hexBuffer ? '0x' + hexBuffer : '',
         storage_engine: 'PostgreSQL (bytea / AES-256-GCM)',
         encryption_status: 'Cifrado en Reposo (AES-256-GCM)'
       };
@@ -2211,4 +2821,10 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`OrderSync Backend running on port ${PORT}`);
+  setTimeout(() => {
+    ShopifyService.autoSyncAllFromShopify(io).catch(() => {});
+  }, 5000);
+  setInterval(() => {
+    ShopifyService.autoSyncAllFromShopify(io).catch(() => {});
+  }, 60000);
 });

@@ -478,7 +478,7 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
 
     // Metrics Module
     metricsTitle: 'Executive Business Intelligence & Metrics',
-    metricsSubtitle: 'Multi-channel analytics across Shopify and Amazon ecosystems',
+    metricsSubtitle: 'Store analytics, unit economics, and North America fulfillment telemetry',
     kpiRevenue: 'Total Gross Revenue',
     kpiShopifyShare: 'Shopify Share',
     kpiAmazonShare: 'Amazon Share',
@@ -645,7 +645,7 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
 
     // Route & Tracking
     routeTrackingTitle: 'Real-Time Delivery Routes & Fulfillment',
-    routeTrackingSubtitle: 'Live transit tracking across carriers: DHL Express, FedEx, and Amazon Logistics',
+    routeTrackingSubtitle: 'Live transit tracking across carriers: DHL Express, FedEx, and UPS Ground',
     colRouteCarrier: 'Carrier',
     colRouteDestination: 'Destination Route',
     colRouteStatus: 'Route Phase',
@@ -699,7 +699,7 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
 
     // Orders Table
     tableTitle: 'Real-Time Incoming Orders',
-    tableSubtitle: 'Live ingestion via Shopify & Amazon Webhooks',
+    tableSubtitle: 'Live ingestion via Shopify Webhooks',
     colOrderId: 'Order ID',
     colChannel: 'Channel',
     colCustomer: 'Customer',

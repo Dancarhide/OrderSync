@@ -7,6 +7,13 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { TranslationService, SupportedLanguage } from '../../services/translation.service';
+import { LiveShipmentTrackerComponent } from '../../modules/logistics/live-shipment-tracker.component';
+import { LocationSelectorComponent } from '../../modules/compliance/location-selector.component';
+import { ComplianceDashboardPageComponent } from '../../modules/compliance/components/compliance-dashboard-page.component';
+import { ComplianceAlertToastComponent } from '../../modules/compliance/components/compliance-alert-toast.component';
+import { OrderComplianceBadgesComponent } from '../../modules/compliance/order-compliance-badges.component';
+import { LocationContextService } from '../../modules/compliance/location-context.service';
+import { AuditCenterComponent } from '../../modules/audits/audit-center.component';
 
 export type UserRole = string;
 
@@ -20,6 +27,7 @@ export interface AppRole {
 
 export type ActiveModule =
   | 'dashboard'
+  | 'orders'
   | 'metrics'
   | 'channels'
   | 'inventory'
@@ -28,6 +36,8 @@ export type ActiveModule =
   | 'users'
   | 'security'
   | 'logistics'
+  | 'compliance'
+  | 'audits'
   | 'devops'
   | 'returns';
 
@@ -255,7 +265,16 @@ interface Toast {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    LiveShipmentTrackerComponent,
+    LocationSelectorComponent,
+    ComplianceDashboardPageComponent,
+    ComplianceAlertToastComponent,
+    OrderComplianceBadgesComponent,
+    AuditCenterComponent,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -283,15 +302,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedStatus = 'ALL';
   selectedLatency = 'ALL';
 
-  // Pagination (10 en 10)
+  // Pagination & Table View Customization
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 6;
+  orderPageSizeOptions: number[] = [5, 6, 10, 20, 50];
+  orderTableDensity: 'comfortable' | 'compact' = 'comfortable';
+  orderSortBy: 'newest' | 'amount-desc' | 'amount-asc' = 'newest';
+  showOrderAddresses = true;
+  showOrderComplianceCol = true;
+  showOrderViewSettings = false;
 
   // Module: Inventory Data & Controls
   inventoryItems: InventoryItem[] = [];
   inventoryLoading = false;
   inventoryViewMode: 'table' | 'cards' = 'table';
-  inventoryPageSize: number = 10;
+  inventoryPageSize: number = 6;
   inventoryCurrentPage: number = 1;
   inventorySearch: string = '';
   inventoryStockFilter: 'all' | 'low' | 'out' | 'in' = 'all';
@@ -315,7 +340,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   customerSearch: string = '';
   customerChannelFilter: string = 'all';
   customerSortBy: 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'order' = 'newest';
-  customerPageSize: number = 10;
+  customerPageSize: number = 6;
   customerCurrentPage: number = 1;
   revealCustomerPii = true;
   selectedAuditCustomer: CustomerRecord | null = null;
@@ -583,8 +608,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   shipmentArrivalFilter = 'ALL';
   shipmentSearch = '';
   shipmentCurrentPage = 1;
-  shipmentPageSize = 10;
-  shipmentPageSizeOptions = [2, 3, 5, 10, 25];
+  shipmentPageSize = 6;
+  shipmentPageSizeOptions = [5, 6, 10, 25];
 
   // Mercado Libre Style Live Tracking Modal
   selectedTrackingShipment: RealShipment | null = null;
@@ -599,8 +624,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   returnReasonFilter = 'ALL';
   returnSearch = '';
   returnCurrentPage = 1;
-  returnPageSize = 10;
-  returnPageSizeOptions = [2, 3, 5, 10];
+  returnPageSize = 6;
+  returnPageSizeOptions = [4, 6, 10];
 
   onReturnPageSizeChange() {
     this.returnCurrentPage = 1;
@@ -661,6 +686,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   devopsLoading = false;
   devopsActiveSubTab: 'overview' | 'containers' | 'cicd' | 'logs' | 'metrics' = 'overview';
   devopsPrometheusMetricsRaw = '';
+  devopsLogSearch = '';
+  devopsAutoPoll = false;
+  private devopsPollTimer: any = null;
+  devopsProbesLoading = false;
+  devopsProbeResults: Record<string, { status: string; latencyMs: number; checkedAt: string }> = {
+    health: { status: '200 OK', latencyMs: 0, checkedAt: 'Ready' },
+    ready: { status: '200 OK', latencyMs: 0, checkedAt: 'Ready' },
+    live: { status: '200 OK', latencyMs: 0, checkedAt: 'Ready' },
+  };
 
   // User & RBAC
   currentUserEmail = 'admin@ordersync.app';
@@ -679,7 +713,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // User Search, Filtering & Sorting
   userSearch = '';
-  userRoleFilter: 'all' | 'Admin' | 'Operator' = 'all';
+  userRoleFilter: string = 'all';
   userSortBy: 'newest' | 'oldest' | 'email-asc' = 'newest';
 
   // Edit / Password Reset Modal
@@ -697,13 +731,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Dynamic Roles & Permissions Definition
   allNavModules: Array<{ key: ActiveModule; label: string; category: string; description: string }> = [
-    { key: 'dashboard', label: 'Dashboard Overview', category: 'Core Platform', description: 'Real-time KPIs, channel breakdown and order stream' },
+    { key: 'dashboard', label: 'Dashboard Overview', category: 'Core Platform', description: 'Executive command center, live KPIs and 10-hub posture' },
+    { key: 'orders', label: 'Orders & Fulfillment', category: 'Core Platform', description: 'Omnichannel order stream, compliance badges and RMA' },
     { key: 'metrics', label: 'Business Metrics & BI', category: 'Core Platform', description: 'Executive sales analytics, financial margins and SLA' },
     { key: 'inventory', label: 'Inventory & Stock', category: 'Core Platform', description: 'Product catalog, real-time stock and sync engine' },
     { key: 'suppliers', label: 'Suppliers & Procurement', category: 'Core Platform', description: 'Supply chain partners and restock purchase orders' },
     { key: 'customers', label: 'Customer Directory', category: 'Core Platform', description: 'Centralized directory of client accounts and addresses' },
     { key: 'users', label: 'User Management', category: 'Core Platform', description: 'RBAC user accounts and navigation access control' },
     { key: 'logistics', label: 'Logistics & Route Tracking', category: 'Operations', description: 'Multi-carrier shipment tracking and live phases' },
+    { key: 'compliance', label: 'Compliance & Locations', category: 'Operations', description: 'Multi-location regulatory matrix, health & alerts' },
+    { key: 'audits', label: 'Security Audits & DB', category: 'Operations', description: 'ISO 27001 audits, PDF reports & DB hygiene (Admin)' },
     { key: 'returns', label: 'Returns & Refunds (RMA)', category: 'Operations', description: 'RMA returns workflow and inventory restock' },
     { key: 'devops', label: 'DevOps & Monitoring', category: 'Operations', description: 'System health, telemetry and database connection' }
   ];
@@ -712,28 +749,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
     {
       name: 'Admin',
       description: 'Full master access and control across the entire platform',
-      color: 'purple',
+      color: 'emerald',
       isSystem: true,
-      allowedModules: ['dashboard', 'metrics', 'inventory', 'suppliers', 'customers', 'users', 'logistics', 'returns', 'devops']
+      allowedModules: ['dashboard', 'orders', 'metrics', 'inventory', 'suppliers', 'customers', 'users', 'logistics', 'compliance', 'audits', 'returns', 'devops']
     },
     {
       name: 'Operator',
       description: 'Standard day-to-day operations for orders, inventory and logistics',
       color: 'blue',
       isSystem: true,
-      allowedModules: ['dashboard', 'inventory', 'logistics', 'returns']
+      allowedModules: ['dashboard', 'orders', 'inventory', 'logistics', 'compliance', 'returns']
     }
   ];
 
-  // Role Management Modal State
+  // User & Role Management State
+  userSubTab: 'users' | 'roles' = 'users';
   showRoleModal = false;
   showManageRolesModal = false;
   editingRoleName = '';
   roleFormName = '';
   roleFormDesc = '';
-  roleFormColor = 'purple';
+  roleFormColor = 'emerald';
   roleFormModules: Record<string, boolean> = {};
   roleFormError = '';
+
+  getUsersCountByRole(roleName: string): number {
+    return this.systemUsers.filter((u) => u.role === roleName).length;
+  }
+
+  getRoleModulesCount(roleName: string): number {
+    if (roleName === 'Admin') return this.allNavModules.length;
+    const found = this.roles.find((r) => r.name === roleName);
+    return found ? found.allowedModules.length : 6;
+  }
 
   // Module: Inventory Product Creation & Multi-channel Sync Modal
   showProductForm = false;
@@ -775,8 +823,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     private http: HttpClient,
     private router: Router,
-    public translationService: TranslationService
-  ) {}
+    public translationService: TranslationService,
+    public locationContext: LocationContextService
+  ) { }
 
   get t() {
     return this.translationService.t;
@@ -796,6 +845,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (this.metrics.sales.amazonRevenue || 0) / this.metrics.sales.amazonOrders;
   }
 
+  get totalOrdersRevenue(): number {
+    return this.orders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+  }
+
+  get lowStockItemsCount(): number {
+    return this.inventoryItems.filter((item) => item.stock_quantity < 15).length;
+  }
+
+  get compliantHubsCount(): number {
+    return this.locationContext.locations().filter((l) => l.health_status === 'verde').length;
+  }
+
   ngOnInit() {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -803,7 +864,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const u = JSON.parse(savedUser);
         if (u.email) this.currentUserEmail = u.email;
         if (u.role) this.currentRole = u.role;
-      } catch {}
+      } catch { }
     }
 
     this.loadInitialOrders();
@@ -819,6 +880,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loadHealth();
     this.loadShopifyStatus();
     this.loadProductTypes();
+
+    // Periodic live background refresh every 15s so metrics, orders, and modules never stay static
+    this.globalRefreshTimer = setInterval(() => {
+      this.loadInitialOrders();
+      this.loadMetrics();
+      if (this.activeModule === 'inventory') this.loadInventory();
+      if (this.activeModule === 'suppliers') { this.loadSuppliers(); this.loadPurchaseOrders(); }
+      if (this.activeModule === 'customers') this.loadCustomers();
+      if (this.activeModule === 'logistics') this.loadShipments();
+      if (this.activeModule === 'returns') this.loadReturns();
+      if (this.activeModule === 'devops' && !this.devopsAutoPoll) this.loadHealth();
+    }, 15000);
 
     this.http.get<any>(`${API_BASE}/api/shipments/auto-engine/status`).subscribe({
       next: (res) => { this.autoDispatchActive = !!res.active; }
@@ -853,6 +926,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
 
     this.socket.on('SHIPMENTS_BATCH_UPDATED', () => {
+      this.loadShipments();
+      this.loadMetrics();
+    });
+
+    this.socket.on('SHIPMENT_CREATED', () => {
       this.loadShipments();
       this.loadMetrics();
     });
@@ -929,9 +1007,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  private globalRefreshTimer: any = null;
+
   ngOnDestroy() {
     if (this.socket) {
       this.socket.disconnect();
+    }
+    if (this.globalRefreshTimer) {
+      clearInterval(this.globalRefreshTimer);
+      this.globalRefreshTimer = null;
+    }
+    if (this.devopsPollTimer) {
+      clearInterval(this.devopsPollTimer);
+      this.devopsPollTimer = null;
     }
   }
 
@@ -2540,7 +2628,80 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   clearDevopsLogsView() {
     this.devopsLogs = [];
-    this.showToast('Vista de registros limpiada.');
+    this.showToast('Runtime log view cleared.');
+  }
+
+  get filteredDevopsLogs(): any[] {
+    if (!this.devopsLogSearch || !this.devopsLogSearch.trim()) {
+      return this.devopsLogs;
+    }
+    const q = this.devopsLogSearch.trim().toLowerCase();
+    return this.devopsLogs.filter(
+      (l) =>
+        (l.message || '').toLowerCase().includes(q) ||
+        (l.component || '').toLowerCase().includes(q) ||
+        (l.level || '').toLowerCase().includes(q)
+    );
+  }
+
+  toggleDevopsAutoPoll() {
+    this.devopsAutoPoll = !this.devopsAutoPoll;
+    if (this.devopsPollTimer) {
+      clearInterval(this.devopsPollTimer);
+      this.devopsPollTimer = null;
+    }
+    if (this.devopsAutoPoll) {
+      this.loadHealth();
+      this.devopsPollTimer = setInterval(() => {
+        if (this.activeModule === 'devops') {
+          this.loadHealth();
+        }
+      }, 5000);
+      this.showToast('Live telemetry auto-poll enabled (5s).');
+    } else {
+      this.showToast('Live telemetry auto-poll paused.');
+    }
+  }
+
+  runHealthProbes() {
+    this.devopsProbesLoading = true;
+    const endpoints: Array<{ key: string; path: string }> = [
+      { key: 'health', path: '/health' },
+      { key: 'ready', path: '/ready' },
+      { key: 'live', path: '/live' },
+    ];
+    let pending = endpoints.length;
+    endpoints.forEach(({ key, path }) => {
+      const start = performance.now();
+      this.http.get(`${API_BASE}${path}`, { observe: 'response' }).subscribe({
+        next: (resp) => {
+          const latencyMs = Math.round(performance.now() - start);
+          this.devopsProbeResults[key] = {
+            status: `${resp.status} OK`,
+            latencyMs,
+            checkedAt: new Date().toLocaleTimeString([], { hour12: false }),
+          };
+          pending -= 1;
+          if (pending === 0) this.devopsProbesLoading = false;
+        },
+        error: (err) => {
+          const latencyMs = Math.round(performance.now() - start);
+          this.devopsProbeResults[key] = {
+            status: `${err.status || 503} ERR`,
+            latencyMs,
+            checkedAt: new Date().toLocaleTimeString([], { hour12: false }),
+          };
+          pending -= 1;
+          if (pending === 0) this.devopsProbesLoading = false;
+        },
+      });
+    });
+  }
+
+  copyPrometheusMetrics() {
+    if (!this.devopsPrometheusMetricsRaw) return;
+    navigator.clipboard?.writeText(this.devopsPrometheusMetricsRaw);
+    this.showToast('Prometheus RFC 0.0.4 metrics copied to clipboard.');
   }
 
   // Inventory Filtering & Pagination Getters
@@ -2906,56 +3067,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const payload = channel === 'Shopify'
       ? {
-          id: 5000000000 + orderNum,
-          order_number: orderNum,
-          name: `#${orderNum}`,
-          financial_status: 'paid',
-          total_price: price.toFixed(2),
-          currency: 'USD',
-          customer: {
-            first_name: pickedCustomer.name.split(' ')[0],
-            last_name: pickedCustomer.name.split(' ').slice(1).join(' '),
-            email: `${pickedCustomer.name.toLowerCase().replace(/[^a-z]/g, '.')}@example.com`,
-            phone: pickedCustomer.phone
-          },
-          shipping_address: {
-            name: pickedCustomer.name,
-            address1: pickedCustomer.address1,
-            city: pickedCustomer.city,
-            province: pickedCustomer.province,
-            zip: pickedCustomer.zip,
-            country: 'United States',
-            phone: pickedCustomer.phone
-          },
-          line_items: [
-            {
-              id: 9000000000 + orderNum,
-              title: chosen.product_name,
-              sku: chosen.sku,
-              quantity: 1,
-              price: price.toFixed(2)
-            }
-          ]
-        }
+        id: 5000000000 + orderNum,
+        order_number: orderNum,
+        name: `#${orderNum}`,
+        financial_status: 'paid',
+        total_price: price.toFixed(2),
+        currency: 'USD',
+        customer: {
+          first_name: pickedCustomer.name.split(' ')[0],
+          last_name: pickedCustomer.name.split(' ').slice(1).join(' '),
+          email: `${pickedCustomer.name.toLowerCase().replace(/[^a-z]/g, '.')}@example.com`,
+          phone: pickedCustomer.phone
+        },
+        shipping_address: {
+          name: pickedCustomer.name,
+          address1: pickedCustomer.address1,
+          city: pickedCustomer.city,
+          province: pickedCustomer.province,
+          zip: pickedCustomer.zip,
+          country: 'United States',
+          phone: pickedCustomer.phone
+        },
+        line_items: [
+          {
+            id: 9000000000 + orderNum,
+            title: chosen.product_name,
+            sku: chosen.sku,
+            quantity: 1,
+            price: price.toFixed(2)
+          }
+        ]
+      }
       : {
-          external_order_id: `AMZ-${Date.now().toString().slice(-6)}-${orderNum}`,
-          status: 'pending',
-          total_amount: price,
-          currency: 'USD',
-          customer: {
-            full_name: 'Robert Davis',
-            shipping_address: '789 Westheimer Rd, Houston, TX 77006',
-            phone_number: '+1-832-555-0144'
-          },
-          items: [
-            {
-              sku: chosen.sku,
-              product_name: chosen.product_name,
-              quantity: 1,
-              unit_price: price
-            }
-          ]
-        };
+        external_order_id: `AMZ-${Date.now().toString().slice(-6)}-${orderNum}`,
+        status: 'pending',
+        total_amount: price,
+        currency: 'USD',
+        customer: {
+          full_name: 'Robert Davis',
+          shipping_address: '789 Westheimer Rd, Houston, TX 77006',
+          phone_number: '+1-832-555-0144'
+        },
+        items: [
+          {
+            sku: chosen.sku,
+            product_name: chosen.product_name,
+            quantity: 1,
+            unit_price: price
+          }
+        ]
+      };
 
     this.http.post(endpoint, payload).subscribe({
       next: (res: any) => {
@@ -2976,7 +3137,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (this.totalOrders > 0) {
       const totalLatency = this.orders.reduce((sum, o) => sum + (o.sync_latency_ms || 0), 0);
-      this.averageLatency = totalLatency / this.totalOrders;
+      this.averageLatency = Math.round(totalLatency / this.totalOrders);
     } else {
       this.averageLatency = 0;
     }
@@ -2984,7 +3145,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Filtered orders getter
   get filteredOrders(): Order[] {
-    return this.orders.filter((order) => {
+    const filtered = this.orders.filter((order) => {
       const term = this.searchTerm.trim().toLowerCase();
       const matchesSearch =
         !term ||
@@ -3009,6 +3170,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       return matchesSearch && matchesChannel && matchesStatus && matchesLatency;
     });
+
+    if (this.orderSortBy === 'amount-desc') {
+      return [...filtered].sort((a, b) => (Number(b.total_amount) || 0) - (Number(a.total_amount) || 0));
+    }
+    if (this.orderSortBy === 'amount-asc') {
+      return [...filtered].sort((a, b) => (Number(a.total_amount) || 0) - (Number(b.total_amount) || 0));
+    }
+    return filtered;
+  }
+
+  setOrderPageSize(size: number) {
+    this.pageSize = Number(size) || 6;
+    this.currentPage = 1;
   }
 
   // Paginated orders (10 per page)

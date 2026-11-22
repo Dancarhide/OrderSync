@@ -4,6 +4,9 @@ import { Pool } from 'pg';
 import { Server } from 'socket.io';
 import { EncryptionService } from '../services/encryption.service';
 import { DevOpsService } from '../services/devops.service';
+import { ComplianceEngineService } from '../services/compliance-engine.service';
+import { websocketService } from '../services/websocket.service';
+import { ShopifyService } from '../services/shopify.service';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -272,6 +275,51 @@ export const handleWebhook = (io: Server) => async (req: Request, res: Response)
 
     await client.query('COMMIT');
 
+    // 7c. Evaluate Real-Time Multi-Location Regulatory Compliance (ISO-27001, SLA <5s, Carta Porte, Loi 25)
+    try {
+      const addrLower = (customer.shipping_address || '').toLowerCase();
+      const targetHubCode =
+        addrLower.includes('monterrey') ? 'MX-MTY' :
+        addrLower.includes('chihuahua') ? 'MX-CHH' :
+        addrLower.includes('cdmx') || addrLower.includes('mexico city') ? 'MX-CDMX' :
+        addrLower.includes('mexico') ? 'MX-FED' :
+        addrLower.includes('montreal') || addrLower.includes('quebec') ? 'CA-MTL' :
+        addrLower.includes('toronto') ? 'CA-TOR' :
+        addrLower.includes('california') || addrLower.includes('los angeles') ? 'US-CA' :
+        addrLower.includes('new york') ? 'US-NYC' :
+        addrLower.includes('michigan') || addrLower.includes('detroit') ? 'US-MI' :
+        'US-TX-HQ';
+
+      const locLookup = await pool.query('SELECT id, code FROM locations WHERE code = $1 LIMIT 1', [targetHubCode]);
+      if (locLookup.rows.length > 0) {
+        const loc = locLookup.rows[0];
+        const compResult = await ComplianceEngineService.evaluateOrderComplianceDetailed(
+          {
+            id: orderId,
+            externalOrderId: external_order_id,
+            fullName: encName,
+            shippingAddress: encAddress,
+            phone: encPhone,
+            syncLatencyMs: sync_latency_ms,
+            requiresLogisticsTransit: true,
+            satCartaPorteFolio: req.body?.sat_carta_porte_folio || null,
+            frenchTemplateAvailable: req.body?.french_template_available !== false,
+          },
+          loc.id,
+          pool
+        );
+        websocketService.emitNewOrderSynced({
+          orderId,
+          externalOrderId: external_order_id,
+          channel,
+          locationCode: loc.code,
+          complianceStatus: compResult.status,
+        });
+      }
+    } catch (compErr) {
+      console.warn('[Webhook Compliance] Non-fatal compliance evaluation warning:', compErr);
+    }
+
     // 8. Broadcast synchronized order with customer details (at rest encrypted in PostgreSQL via AES-256-GCM)
     const broadcastPayload = {
       id: orderId,
@@ -403,13 +451,21 @@ export async function processShopifyRefundPayload(io: Server, payload: any, res:
       notes: defaultNotes
     };
 
-    // Restock inventory atomically
-    await pool.query(
+    // Restock inventory atomically + sync stock level to Shopify
+    const invUp = await pool.query(
       `UPDATE inventory 
        SET stock_quantity = stock_quantity + $1, updated_at = CURRENT_TIMESTAMP 
-       WHERE sku = $2`,
+       WHERE sku = $2
+       RETURNING *`,
       [quantity, sku]
     );
+    if (invUp.rows[0]) {
+      await ShopifyService.syncStockToShopify(
+        invUp.rows[0].shopify_product_id,
+        invUp.rows[0].sku,
+        invUp.rows[0].stock_quantity
+      );
+    }
 
     // Update order status if matched
     if (matchedOrder?.id) {

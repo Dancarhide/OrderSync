@@ -3,7 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'; // 32 bytes for AES-256
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || (
+  process.env.NODE_ENV === 'production'
+    ? (() => { throw new Error('FATAL: ENCRYPTION_KEY must be set in production'); })()
+    : '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+); // 32 bytes for AES-256
 const IV_LENGTH = 16; // 16 bytes for AES
 
 export class EncryptionService {

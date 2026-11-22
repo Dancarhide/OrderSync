@@ -397,4 +397,154 @@ export class ShopifyService {
       return { success: false, error: err.message || 'Error deleting product from Shopify' };
     }
   }
+
+  /**
+   * Synchronizes exact available stock quantity to Shopify Inventory Levels API
+   */
+  public static async syncStockToShopify(
+    shopifyProductId: string | null | undefined,
+    sku: string,
+    availableQuantity: number
+  ): Promise<{ success: boolean; status: 'synced' | 'local_only' | 'failed'; error?: string }> {
+    if (!shopifyProductId) {
+      return { success: false, status: 'local_only', error: 'Product not linked to a Shopify Product ID' };
+    }
+
+    const domain = this.getShopDomain();
+    const token = this.getAccessToken();
+    if (!token) {
+      return { success: false, status: 'failed', error: 'Missing SHOPIFY_ADMIN_ACCESS_TOKEN' };
+    }
+
+    try {
+      const apiVer = this.getApiVersion();
+      const headers = {
+        'X-Shopify-Access-Token': token,
+        'Content-Type': 'application/json'
+      };
+
+      // 1. Fetch product variants to locate inventory_item_id
+      const prodRes = await fetch(`https://${domain}/admin/api/${apiVer}/products/${shopifyProductId}.json`, { headers });
+      if (!prodRes.ok) {
+        const errText = await prodRes.text();
+        return { success: false, status: 'failed', error: `Product lookup HTTP ${prodRes.status}: ${errText}` };
+      }
+      const prodJson: any = await prodRes.json();
+      const variants: any[] = prodJson?.product?.variants || [];
+      const matchedVariant =
+        variants.find((v) => String(v.sku || '').trim().toUpperCase() === sku.trim().toUpperCase()) || variants[0];
+
+      if (!matchedVariant?.inventory_item_id) {
+        return { success: false, status: 'failed', error: 'No Shopify inventory_item_id found for variant' };
+      }
+
+      // 2. Fetch primary active location
+      const locRes = await fetch(`https://${domain}/admin/api/${apiVer}/locations.json`, { headers });
+      if (!locRes.ok) {
+        const errText = await locRes.text();
+        return { success: false, status: 'failed', error: `Locations lookup HTTP ${locRes.status}: ${errText}` };
+      }
+      const locJson: any = await locRes.json();
+      const locations: any[] = locJson?.locations || [];
+      const primaryLocation = locations.find((l) => l.active) || locations[0];
+      if (!primaryLocation?.id) {
+        return { success: false, status: 'failed', error: 'No active Shopify fulfillment location found' };
+      }
+
+      // 3. Set exact available inventory level in Shopify
+      const setRes = await fetch(`https://${domain}/admin/api/${apiVer}/inventory_levels/set.json`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          location_id: primaryLocation.id,
+          inventory_item_id: matchedVariant.inventory_item_id,
+          available: Math.max(0, Math.floor(Number(availableQuantity) || 0))
+        })
+      });
+
+      if (!setRes.ok) {
+        const errText = await setRes.text();
+        return { success: false, status: 'failed', error: `Inventory set HTTP ${setRes.status}: ${errText}` };
+      }
+
+      console.log(`[Shopify Inventory Sync] SKU ${sku} -> Shopify available=${availableQuantity} (Location ${primaryLocation.id})`);
+      return { success: true, status: 'synced' };
+    } catch (err: any) {
+      return { success: false, status: 'failed', error: err.message || 'Error syncing inventory to Shopify' };
+    }
+  }
+
+  /**
+   * Pulls products from Shopify Admin API and upserts them into PostgreSQL inventory
+   */
+  public static async syncProductsFromShopify(): Promise<number> {
+    const domain = this.getShopDomain();
+    const token = this.getAccessToken();
+    if (!token) return 0;
+
+    try {
+      const url = `https://${domain}/admin/api/${this.getApiVersion()}/products.json?limit=250`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!res.ok) return 0;
+      const json: any = await res.json();
+      const products: any[] = json.products || [];
+
+      for (const prod of products) {
+        const v = (prod.variants && prod.variants[0]) || {};
+        const sku = (v.sku && String(v.sku).trim()) || `SHOP-${prod.id}`;
+        const stock = Math.max(0, Number(v.inventory_quantity ?? 0));
+        const price = Number(v.price ?? 0);
+        const img = prod.image?.src || prod.images?.[0]?.src || null;
+
+        await this.pool.query(
+          `INSERT INTO inventory (sku, product_name, stock_quantity, sale_price, unit_cost, supplier_name, product_type, channel, shopify_product_id, image_url, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'Shopify', $8, $9, NOW())
+           ON CONFLICT (sku) DO UPDATE SET
+             product_name = EXCLUDED.product_name,
+             stock_quantity = EXCLUDED.stock_quantity,
+             sale_price = EXCLUDED.sale_price,
+             shopify_product_id = EXCLUDED.shopify_product_id,
+             image_url = COALESCE(EXCLUDED.image_url, inventory.image_url),
+             channel = 'Shopify',
+             updated_at = NOW()`,
+          [
+            sku,
+            prod.title,
+            stock,
+            price,
+            Number((price * 0.45).toFixed(2)),
+            prod.vendor || 'Shopify Store',
+            prod.product_type || 'General',
+            String(prod.id),
+            img
+          ]
+        );
+      }
+      return products.length;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Automatic silent background sync: pulls latest Shopify orders & products into Neon PostgreSQL
+   */
+  public static async autoSyncAllFromShopify(io?: Server): Promise<void> {
+    if (!this.getAccessToken()) return;
+    try {
+      const orders = await this.fetchOrdersFromShopify(50, 'any');
+      if (orders.length > 0) {
+        await this.syncOrdersToDatabase(orders, io);
+      }
+      await this.syncProductsFromShopify();
+    } catch (err) {
+      console.warn('[Shopify Auto-Sync] Background pull skipped:', (err as any)?.message || err);
+    }
+  }
 }
